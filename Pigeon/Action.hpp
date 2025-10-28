@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <map>
 
 #include <string.h>
 #include <unistd.h>    /* for fork */
@@ -15,6 +16,8 @@
 class Action
 {
 public:
+    explicit Action() = default;
+    explicit Action(std::vector<std::unique_ptr<Action>> args) : m_arguments(std::move(args)) {}
     virtual Value execute(State &state) const = 0;
 
     void addArgument(std::unique_ptr<Action> action)
@@ -24,11 +27,18 @@ public:
 
     Action const *getArgument(size_t i) const
     {
-        if (m_arguments.size() >= i)
+        if (i < m_arguments.size())
         {
-            return nullptr;
+            return m_arguments[i].get();
         }
-        return m_arguments[i].get();
+        return nullptr;
+    }
+
+    size_t getArgumentCount() const { return m_arguments.size(); }
+
+    std::vector<std::unique_ptr<Action>> const &getArguments() const
+    {
+        return m_arguments;
     }
 
 private:
@@ -38,7 +48,7 @@ private:
 class BinaryOperationAction : public Action
 {
 public:
-    explicit BinaryOperationAction(Operator op) : m_op(op)
+    explicit BinaryOperationAction(Operator op, std::vector<std::unique_ptr<Action>> args) : m_op(op),  Action(std::move(args))
     {
     }
     Value execute(State &state) const;
@@ -73,23 +83,20 @@ private:
 class SequenceAction : public Action
 {
 public:
-    explicit SequenceAction(std::vector<std::unique_ptr<Action>> actions) : m_actions(std::move(actions)) {}
+    explicit SequenceAction(std::vector<std::unique_ptr<Action>> actions) : Action(std::move(actions)) {}
     Value execute(State &state) const override
     {
-        for (size_t i = 0; i < m_actions.size(); i++)
+        for (size_t i = 0; i < getArgumentCount(); i++)
         {
-            m_actions[i]->execute(state);
+            auto it = getArgument(i);
+            if (getArgument(i) != nullptr)
+            {
+                getArgument(i)->execute(state);
+            }
         }
+        // TODO: Make it return value of the last action
         return Value(0);
     }
-
-    void addAction(std::unique_ptr<Action> action)
-    {
-        m_actions.push_back(std::move(action));
-    }
-
-private:
-    std::vector<std::unique_ptr<Action>> m_actions;
 };
 
 class VariableBlock : public Action
@@ -122,45 +129,8 @@ public:
 
     explicit CommandCallAction(std::unique_ptr<Action> commandName) : m_commandName(std::move(commandName)) {}
 
-    Value execute(State &state) const override
-    {
-        std::string programName = convertValueToString(m_commandName->execute(state));
-        std::vector<std::string> argsV;
-        for (std::unique_ptr<Action> const &arg : m_arguments)
-        {
-            argsV.push_back(convertValueToString(arg->execute(state)));
-        }
-        std::vector<const char *> args = {programName.c_str()};
-        for (std::string const &arg : argsV)
-        {
-            args.push_back(arg.c_str());
-        }
-        int pipefd[2];
-        pipe(pipefd);
-        pid_t pid = fork();
-        if (pid == 0)
-        {
-            close(pipefd[0]);
-            dup2(pipefd[1], 1);
-            dup2(pipefd[1], 2);
-            close(pipefd[1]);
-            execv(programName.c_str(), (char *const *)args.data());
-            exit(127);
-        }
-        else
-        {
-            char buffer[1024];
-            memset(buffer, 0, sizeof(buffer));
-            close(pipefd[1]);
-            while (read(pipefd[0], buffer, sizeof(buffer)) != 0)
-            {
-                std::cout << buffer << std::endl;
-            }
-            int status;
-            waitpid(pid, &status, 0);
-            return Value(status);
-        }
-    }
+    Value execute(State &state) const override;
+    
 
 private:
     std::unique_ptr<Action> m_commandName;

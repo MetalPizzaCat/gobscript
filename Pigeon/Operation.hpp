@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <map>
+#include <unordered_map>
 
 enum class Operator
 {
@@ -40,8 +40,9 @@ enum class Operator
     BitRightShiftAssign,
 };
 
-static const std::map<std::string, Operator> Operators = {
+static const std::unordered_map<std::string, Operator> Operators = {
     {"===", Operator::EqualsStrict},
+    {"==", Operator::Equals},
     {"!==", Operator::NotEqualsStrict},
     {"!=", Operator::NotEquals},
     {"!", Operator::Not},
