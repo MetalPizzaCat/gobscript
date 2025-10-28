@@ -1,5 +1,5 @@
 #include "Parser.hpp"
-
+#include <limits>
 void consumeCharacter(char character, std::string::const_iterator &start, std::string::const_iterator end, std::string const &errorMessage)
 {
     if (start == end || *start != character)
@@ -38,29 +38,67 @@ void skipWhitespace(std::string::const_iterator &start, std::string::const_itera
     }
 }
 
-std::string parseArgument(std::string::const_iterator &start, std::string::const_iterator const &end)
-{
-    std::string result = "";
-    while (start != end && (std::isalnum(*start) || *start == '-' || *start == '='))
-    {
-        result += *start;
-        start++;
-    }
-    return result;
-}
-
 std::unique_ptr<GetConstStringAction> parseConstString(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
     std::string result = "";
-    for (; start != end && *start != ' ' && *start != '(' && *start != ')'; start++)
+    bool expectedClosingMark = *start == '"';
+    if (expectedClosingMark)
+    {
+        start++;
+    }
+    bool hitClosingMark = false;
+    for (; start != end && *start != ' ' && *start != '(' && *start != ')' && !(expectedClosingMark && *start == '"'); start++)
     {
         result += *start;
+    }
+    if (expectedClosingMark)
+    {
+        if (*start != '"')
+        {
+            throwError("expected closing '\"'");
+        }
+        else
+        {
+            start++;
+        }
     }
     if (result == "")
     {
         return nullptr;
     }
     return std::make_unique<GetConstStringAction>(result);
+}
+std::unique_ptr<GetConstNumberAction> parseConstNumber(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    if (!std::isdigit(*start))
+    {
+        return nullptr;
+    }
+    std::string num;
+    size_t offset = 0;
+    while ((start + offset) != end && std::isdigit(*(start + offset)))
+    {
+        num.push_back(*(start + offset));
+        offset++;
+    }
+    int64_t numVal;
+    try
+    {
+        numVal = std::stol(num);
+    }
+    catch (std::invalid_argument const &e)
+    {
+        return nullptr;
+    }
+    catch (std::out_of_range const &e)
+    {
+        throwError("Constant number is too large, valid range is " +
+                   std::to_string(std::numeric_limits<int32_t>::min()) +
+                   "< x < " +
+                   std::to_string(std::numeric_limits<int32_t>::max()));
+    }
+    start += offset;
+    return std::make_unique<GetConstNumberAction>(numVal);
 }
 std::optional<Operator> parseOperationType(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
@@ -83,8 +121,15 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         return nullptr;
     }
     it++;
+    if (expectString("if", it, end))
+    {
+        it += 2;
+        std::unique_ptr<BranchAction> branch = parseBranch(it, end);
+        start = it;
+        return branch;
+    }
     // check if any preexisting action
-    if (std::optional<Operator> op = parseOperationType(it, end); op.has_value())
+    else if (std::optional<Operator> op = parseOperationType(it, end); op.has_value())
     {
         std::unique_ptr<BinaryOperationAction> binOp = parseBinaryOperation(op.value(), it, end);
         start = it;
@@ -104,22 +149,30 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
     return nullptr;
 }
 
+std::unique_ptr<Action> parseArgument(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    skipWhitespace(start, end);
+    if (std::unique_ptr<Action> act = parseAction(start, end); act != nullptr)
+    {
+        return act;
+    }
+    else if (std::unique_ptr<GetConstNumberAction> num = parseConstNumber(start, end); num != nullptr)
+    {
+        return std::move(num);
+    }
+    else
+    {
+        return parseConstString(start, end);
+    }
+    skipWhitespace(start, end);
+}
+
 std::vector<std::unique_ptr<Action>> parseArguments(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
     std::vector<std::unique_ptr<Action>> actions;
     while (start != end && *start != ')')
     {
-        skipWhitespace(start, end);
-        if (std::unique_ptr<Action> act = parseAction(start, end); act != nullptr)
-        {
-            actions.push_back(std::move(act));
-        }
-        else
-        {
-
-            actions.push_back(parseConstString(start, end));
-        }
-        skipWhitespace(start, end);
+        actions.push_back(parseArgument(start, end));
     }
     return actions;
 }
@@ -146,6 +199,29 @@ std::unique_ptr<BinaryOperationAction> parseBinaryOperation(Operator op, std::st
     skipWhitespace(start, end);
     consumeCharacter(')', start, end, "Expected ')'");
     return std::make_unique<BinaryOperationAction>(op, std::move(args));
+}
+
+std::unique_ptr<BranchAction> parseBranch(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    skipWhitespace(start, end);
+    std::unique_ptr<Action> condition = parseArgument(start, end);
+    skipWhitespace(start, end);
+    if (condition == nullptr)
+    {
+        throwError("Expected condition");
+    }
+    skipWhitespace(start, end);
+    std::unique_ptr<SequenceAction> thenBranch = parseSequence(start, end);
+    skipWhitespace(start, end);
+    if (expectString("else", start, end))
+    {
+        start += 4;
+    }
+    skipWhitespace(start, end);
+    std::unique_ptr<SequenceAction> elseBranch = parseSequence(start, end);
+    skipWhitespace(start, end);
+    consumeCharacter(')', start, end, "Expected ')'");
+    return std::make_unique<BranchAction>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
 }
 
 std::unique_ptr<SequenceAction> parseSequence(std::string::const_iterator &start, std::string::const_iterator const &end)

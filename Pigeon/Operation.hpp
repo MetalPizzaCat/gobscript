@@ -47,6 +47,8 @@ static const std::unordered_map<std::string, Operator> Operators = {
     {"!=", Operator::NotEquals},
     {"!", Operator::Not},
     {"not", Operator::Not},
+    {">=", Operator::MoreEq},
+    {"<=", Operator::LessEq},
     {">>=", Operator::BitRightShiftAssign},
     {"<<=", Operator::BitLeftShiftAssign},
     {">>", Operator::BitRightShift},

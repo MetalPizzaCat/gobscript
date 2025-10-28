@@ -48,7 +48,7 @@ private:
 class BinaryOperationAction : public Action
 {
 public:
-    explicit BinaryOperationAction(Operator op, std::vector<std::unique_ptr<Action>> args) : m_op(op),  Action(std::move(args))
+    explicit BinaryOperationAction(Operator op, std::vector<std::unique_ptr<Action>> args) : m_op(op), Action(std::move(args))
     {
     }
     Value execute(State &state) const;
@@ -60,7 +60,8 @@ private:
 class GetConstNumberAction : public Action
 {
 public:
-    Value execute(State &state) { return Value(m_value); }
+    explicit GetConstNumberAction(int64_t val) : m_value(val) {}
+    Value execute(State &state) const override { return Value(m_value); }
 
 private:
     int64_t m_value;
@@ -99,6 +100,42 @@ public:
     }
 };
 
+class BranchAction : public Action
+{
+public:
+    explicit BranchAction(std::unique_ptr<Action> cond,
+                          std::unique_ptr<Action> thenBranch,
+                          std::unique_ptr<Action> elseBranch) : m_cond(std::move(cond)),
+                                                                m_then(std::move(thenBranch)),
+                                                                m_else(std::move(elseBranch))
+    {
+    }
+
+    Value execute(State &state) const override
+    {
+        Value cond = m_cond->execute(state);
+        if (cond.index() != ValueType::Integer)
+        {
+            throwError("Expected an integer");
+            
+        }
+        if (std::get<int64_t>(cond))
+        {
+            return m_then->execute(state);
+        }
+        else if (m_else != nullptr)
+        {
+            return m_else->execute(state);
+        }
+        return Value(0);
+    }
+
+private:
+    std::unique_ptr<Action> m_cond;
+    std::unique_ptr<Action> m_then;
+    std::unique_ptr<Action> m_else;
+};
+
 class VariableBlock : public Action
 {
 public:
@@ -130,7 +167,6 @@ public:
     explicit CommandCallAction(std::unique_ptr<Action> commandName) : m_commandName(std::move(commandName)) {}
 
     Value execute(State &state) const override;
-    
 
 private:
     std::unique_ptr<Action> m_commandName;

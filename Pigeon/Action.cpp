@@ -26,37 +26,46 @@ Value BinaryOperationAction::execute(State &state) const
     {
         break;
     }
+    }
+
+    if (a.index() != b.index() || a.index() != ValueType::Integer)
+    {
+        throwError("Expected both values to be integers");
+    }
+    switch (m_op)
+    {
+
     case Operator::Less:
     {
-        break;
+        return Value(std::get<int64_t>(a) < std::get<int64_t>(b));
     }
     case Operator::More:
     {
-        break;
+        return Value(std::get<int64_t>(a) > std::get<int64_t>(b));
     }
     case Operator::LessEq:
     {
-        break;
+        return Value(std::get<int64_t>(a) <= std::get<int64_t>(b));
     }
     case Operator::MoreEq:
     {
-        break;
+        return Value(std::get<int64_t>(a) >= std::get<int64_t>(b));
     }
     case Operator::Add:
     {
-        break;
+        return Value(std::get<int64_t>(a) + std::get<int64_t>(b));
     }
     case Operator::Sub:
     {
-        break;
+        return Value(std::get<int64_t>(a) - std::get<int64_t>(b));
     }
     case Operator::Mul:
     {
-        break;
+        return Value(std::get<int64_t>(a) * std::get<int64_t>(b));
     }
     case Operator::Div:
     {
-        break;
+        return Value(std::get<int64_t>(a) / std::get<int64_t>(b));
     }
     case Operator::AddAssign:
     {
@@ -80,15 +89,15 @@ Value BinaryOperationAction::execute(State &state) const
     }
     case Operator::Modulo:
     {
-        break;
+        return Value(std::get<int64_t>(a) % std::get<int64_t>(b));
     }
     case Operator::And:
     {
-        break;
+        return Value(std::get<int64_t>(a) && std::get<int64_t>(b));
     }
     case Operator::Or:
     {
-        break;
+        return Value(std::get<int64_t>(a) || std::get<int64_t>(b));
     }
     case Operator::Not:
     {
@@ -96,15 +105,15 @@ Value BinaryOperationAction::execute(State &state) const
     }
     case Operator::BitAnd:
     {
-        break;
+        return Value(std::get<int64_t>(a) & std::get<int64_t>(b));
     }
     case Operator::BitOr:
     {
-        break;
+        return Value(std::get<int64_t>(a) | std::get<int64_t>(b));
     }
     case Operator::BitXor:
     {
-        break;
+        return Value(std::get<int64_t>(a) ^ std::get<int64_t>(b));
     }
     case Operator::BitNot:
     {
@@ -112,11 +121,11 @@ Value BinaryOperationAction::execute(State &state) const
     }
     case Operator::BitLeftShift:
     {
-        break;
+        return Value(std::get<int64_t>(a) << std::get<int64_t>(b));
     }
     case Operator::BitRightShift:
     {
-        break;
+        return Value(std::get<int64_t>(a) >> std::get<int64_t>(b));
     }
     case Operator::BitAndAssign:
     {

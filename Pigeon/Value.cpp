@@ -71,7 +71,7 @@ bool areValuesEqual(Value const &a, Value const &b)
     case ValueType::Integer:
         return std::get<int64_t>(a) == std::get<int64_t>(b);
     case ValueType::String:
-        return std::get<StringNode *>(a)->getValue() == std::get<StringNode *>(b)->getValue();
+        return std::get<StringNode *>(a) == std::get<StringNode *>(b);
     case ValueType::Array:
         throwError("Array comparison not implemented");
         return std::get<int64_t>(a) == std::get<int64_t>(a);
