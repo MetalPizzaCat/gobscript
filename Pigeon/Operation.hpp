@@ -49,16 +49,9 @@ static const std::unordered_map<std::string, Operator> Operators = {
     {"not", Operator::Not},
     {">=", Operator::MoreEq},
     {"<=", Operator::LessEq},
-    {">>=", Operator::BitRightShiftAssign},
-    {"<<=", Operator::BitLeftShiftAssign},
     {">>", Operator::BitRightShift},
-    {"<<", Operator::BitRightShiftAssign},
     {"<", Operator::Less},
     {">", Operator::More},
-    {"+=", Operator::AddAssign},
-    {"-=", Operator::SubAssign},
-    {"*=", Operator::MulAssign},
-    {"/=", Operator::DivAssign},
     {"+", Operator::Add},
     {"-", Operator::Sub},
     {"*", Operator::Mul},
@@ -67,14 +60,23 @@ static const std::unordered_map<std::string, Operator> Operators = {
     {"||", Operator::Or},
     {"and", Operator::And},
     {"or", Operator::Or},
+};
+
+static const std::unordered_map<std::string, Operator> AssignOperators = {
+
+    {"=", Operator::Assign},
+    {">>=", Operator::BitRightShiftAssign},
+    {"<<=", Operator::BitLeftShiftAssign},
+    {">>", Operator::BitRightShift},
+
+    {"+=", Operator::AddAssign},
+    {"-=", Operator::SubAssign},
+    {"*=", Operator::MulAssign},
+    {"/=", Operator::DivAssign},
+
     {"&=", Operator::BitOrAssign},
     {"&=", Operator::BitAndAssign},
     {"~=", Operator::BitNotAssign},
     {"^=", Operator::BitXorAssign},
     {"%=", Operator::ModuloAssign},
-    {"|", Operator::BitOrAssign},
-    {"&", Operator::BitAndAssign},
-    {"~", Operator::BitNotAssign},
-    {"^", Operator::BitXorAssign},
-    {"%", Operator::ModuloAssign},
 };

@@ -22,10 +22,6 @@ Value BinaryOperationAction::execute(State &state) const
     {
         return !areValuesEqual(a, b);
     }
-    case Operator::Assign:
-    {
-        break;
-    }
     }
 
     if (a.index() != b.index() || a.index() != ValueType::Integer)
@@ -67,26 +63,7 @@ Value BinaryOperationAction::execute(State &state) const
     {
         return Value(std::get<int64_t>(a) / std::get<int64_t>(b));
     }
-    case Operator::AddAssign:
-    {
-        break;
-    }
-    case Operator::SubAssign:
-    {
-        break;
-    }
-    case Operator::MulAssign:
-    {
-        break;
-    }
-    case Operator::DivAssign:
-    {
-        break;
-    }
-    case Operator::ModuloAssign:
-    {
-        break;
-    }
+
     case Operator::Modulo:
     {
         return Value(std::get<int64_t>(a) % std::get<int64_t>(b));
@@ -126,30 +103,6 @@ Value BinaryOperationAction::execute(State &state) const
     case Operator::BitRightShift:
     {
         return Value(std::get<int64_t>(a) >> std::get<int64_t>(b));
-    }
-    case Operator::BitAndAssign:
-    {
-        break;
-    }
-    case Operator::BitOrAssign:
-    {
-        break;
-    }
-    case Operator::BitXorAssign:
-    {
-        break;
-    }
-    case Operator::BitNotAssign:
-    {
-        break;
-    }
-    case Operator::BitLeftShiftAssign:
-    {
-        break;
-    }
-    case Operator::BitRightShiftAssign:
-    {
-        break;
     }
     }
     return a;
@@ -193,4 +146,90 @@ Value CommandCallAction::execute(State &state) const
         waitpid(pid, &status, 0);
         return Value(status);
     }
+}
+
+Value VariableBlockAction::execute(State &state) const
+{
+    std::map<std::string, Value> variables;
+    for (std::pair<const std::string, std::unique_ptr<Action>> const &var : m_variables)
+    {
+        variables[var.first] = var.second->execute(state);
+    }
+    state.pushVariableScope(variables);
+    Value result = m_body->execute(state);
+    state.popVariableScope();
+    return result;
+}
+
+Value VariableAccessAction::execute(State &state) const
+{
+    if (std::optional<Value> val = state.getVariableValue(m_name); val.has_value())
+    {
+        return val.value();
+    }
+    throwError("No variable with name " + m_name + " exists");
+    return Value();
+}
+
+Value AssignOperationAction::execute(State &state) const
+{
+
+    Value val = m_value->execute(state);
+    if (m_op == Operator::Assign)
+    {
+        state.setVariableValue(m_name, val);
+        return val;
+    }
+    if (!state.doesVariableExistAndOfType(m_name, ValueType::Integer))
+    {
+        return Value(0);
+    }
+    switch (m_op)
+    {
+    case Operator::AddAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) + std::get<int64_t>(val)).value();
+    }
+    case Operator::SubAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) - std::get<int64_t>(val)).value();
+    }
+    case Operator::MulAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) * std::get<int64_t>(val)).value();
+    }
+    case Operator::DivAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) / std::get<int64_t>(val)).value();
+    }
+    case Operator::ModuloAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) % std::get<int64_t>(val)).value();
+    }
+    case Operator::BitAndAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) & std::get<int64_t>(val)).value();
+    }
+    case Operator::BitOrAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) | std::get<int64_t>(val)).value();
+    }
+    case Operator::BitXorAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) ^ std::get<int64_t>(val)).value();
+    }
+    case Operator::BitNotAssign:
+    {
+        return Value(0);
+    }
+    case Operator::BitLeftShiftAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) << std::get<int64_t>(val)).value();
+    }
+    case Operator::BitRightShiftAssign:
+    {
+        return state.setVariableValue(m_name, std::get<int64_t>(state.getVariableValue(m_name).value()) >> std::get<int64_t>(val)).value();
+    }
+    }
+    return Value();
 }

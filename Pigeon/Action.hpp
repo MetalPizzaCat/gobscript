@@ -57,6 +57,23 @@ private:
     Operator m_op;
 };
 
+class AssignOperationAction : public Action
+{
+public:
+    explicit AssignOperationAction(Operator op,
+                                   std::string const &variableName,
+                                   std::unique_ptr<Action> value) : m_op(op),
+                                                                    m_name(variableName),
+                                                                    m_value(std::move(value))
+    {
+    }
+    Value execute(State &state) const;
+
+private:
+    std::string m_name;
+    std::unique_ptr<Action> m_value;
+    Operator m_op;
+};
 class GetConstNumberAction : public Action
 {
 public:
@@ -117,7 +134,6 @@ public:
         if (cond.index() != ValueType::Integer)
         {
             throwError("Expected an integer");
-            
         }
         if (std::get<int64_t>(cond))
         {
@@ -136,19 +152,29 @@ private:
     std::unique_ptr<Action> m_else;
 };
 
-class VariableBlock : public Action
+class VariableAccessAction : public Action
 {
 public:
-    Value execute(State &state) const override
-    {
-        // push variables onto the state
-        // execute contents
-        // pop variables from state
-        return Value(0);
-    }
+    explicit VariableAccessAction(std::string const &name) : m_name(name) {}
+    Value execute(State &state) const override;
 
 private:
-    std::map<std::string, Value> m_variables;
+    std::string m_name;
+};
+
+class VariableBlockAction : public Action
+{
+public:
+    explicit VariableBlockAction(
+        std::map<std::string, std::unique_ptr<Action>> variables,
+        std::unique_ptr<Action> body) : m_body(std::move(body)),
+                                        m_variables(std::move(variables)) {}
+
+    Value execute(State &state) const override;
+
+private:
+    std::unique_ptr<Action> m_body;
+    std::map<std::string, std::unique_ptr<Action>> m_variables;
 };
 
 class ChangeDirectory
