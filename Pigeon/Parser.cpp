@@ -4,7 +4,7 @@ void consumeCharacter(char character, std::string::const_iterator &start, std::s
 {
     if (start == end || *start != character)
     {
-        throwError(errorMessage);
+        throwParsingError(start, errorMessage);
     }
     start++;
 }
@@ -32,7 +32,7 @@ bool expectString(std::string const &expected, std::string::const_iterator start
 
 void skipWhitespace(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
-    while (start != end && *start == ' ')
+    while (start != end && (*start == ' ' || *start == '\n'))
     {
         start++;
     }
@@ -55,7 +55,7 @@ std::unique_ptr<GetConstStringAction> parseConstString(std::string::const_iterat
     {
         if (*start != '"')
         {
-            throwError("expected closing '\"'");
+            throwParsingError(start, "expected closing '\"'");
         }
         else
         {
@@ -103,10 +103,10 @@ std::unique_ptr<GetConstNumberAction> parseConstNumber(std::string::const_iterat
     }
     catch (std::out_of_range const &e)
     {
-        throwError("Constant number is too large, valid range is " +
-                   std::to_string(std::numeric_limits<int32_t>::min()) +
-                   "< x < " +
-                   std::to_string(std::numeric_limits<int32_t>::max()));
+        throwParsingError(start, "Constant number is too large, valid range is " +
+                                     std::to_string(std::numeric_limits<int32_t>::min()) +
+                                     "< x < " +
+                                     std::to_string(std::numeric_limits<int32_t>::max()));
     }
     start += offset;
     return std::make_unique<GetConstNumberAction>(numVal);
@@ -141,16 +141,7 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
 {
     skipWhitespace(start, end);
     std::string::const_iterator it = start;
-    if (std::unique_ptr<VariableAccessAction> varAcc = parseVariableAccess(it, end); varAcc != nullptr)
-    {
-        start = it;
-        return varAcc;
-    }
-    if (*it != '(')
-    {
-        return nullptr;
-    }
-    it++;
+
     if (expectString("if", it, end))
     {
         it += 2;
@@ -162,6 +153,13 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
     {
         it += 3;
         std::unique_ptr<VariableBlockAction> var = parseVariableBlock(it, end);
+        start = it;
+        return var;
+    }
+    else if (expectString("exec", it, end))
+    {
+        it += 4;
+        std::unique_ptr<CommandCallAction> var = parseExplicitCommandCall(it, end);
         start = it;
         return var;
     }
@@ -187,35 +185,69 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         // call the op parser
         return binOp;
     }
-    else if (std::unique_ptr<GetConstStringAction> action = parseConstString(it, end); action != nullptr)
-    {
-        std::unique_ptr<CommandCallAction> exec = parseCommandCall(std::move(action), it, end);
-        start = it;
-        return exec;
-    }
-    else
-    {
-        throwError("Expected an action or a constant");
-    }
+    // else if (std::unique_ptr<GetConstStringAction> action = parseConstString(it, end); action != nullptr)
+    // {
+    //     std::unique_ptr<CommandCallAction> exec = parseCommandCall(std::move(action), it, end);
+    //     start = it;
+    //     return exec;
+    // }
+    // else
+    // {
+    //     throwParsingError(start, "Expected operation");
+    // }
     return nullptr;
 }
 
 std::unique_ptr<Action> parseArgument(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
     skipWhitespace(start, end);
-    if (std::unique_ptr<Action> act = parseAction(start, end); act != nullptr)
+    if (std::unique_ptr<VariableAccessAction> varAcc = parseVariableAccess(start, end); varAcc != nullptr)
     {
-        return act;
+        return varAcc;
     }
     else if (std::unique_ptr<GetConstNumberAction> num = parseConstNumber(start, end); num != nullptr)
     {
-        return std::move(num);
+        return num;
     }
-    else
+    else if (std::unique_ptr<VariableAccessAction> varAcc = parseVariableAccess(start, end); varAcc != nullptr)
     {
-        return parseConstString(start, end);
+        return varAcc;
     }
+    else if (std::unique_ptr<Action> act = parseAction(start, end); act != nullptr)
+    {
+        return act;
+    }
+
+    else if (std::unique_ptr<Action> getStr = parseConstString(start, end); getStr != nullptr)
+    {
+        skipWhitespace(start, end);
+        return getStr;
+    }
+    return nullptr;
+}
+
+std::unique_ptr<Action> parseFunction(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
     skipWhitespace(start, end);
+    if (*start == '(')
+    {
+        start++;
+        skipWhitespace(start, end);
+        if (*start == ')')
+        {
+            return std::make_unique<GetConstNumberAction>(0);
+        }
+        std::unique_ptr<Action> func = parseFunction(start, end);
+        consumeCharacter(')', start, end, "Expected ')'");
+        return func;
+    }
+    std::unique_ptr<Action> body = parseArgument(start, end);
+    if (body == nullptr)
+    {
+        return nullptr;
+    }
+
+    return body;
 }
 
 std::unique_ptr<VariableAccessAction> parseVariableAccess(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -234,7 +266,7 @@ std::vector<std::unique_ptr<Action>> parseArguments(std::string::const_iterator 
     std::vector<std::unique_ptr<Action>> actions;
     while (start != end && *start != ')')
     {
-        actions.push_back(parseArgument(start, end));
+        actions.push_back(parseFunction(start, end));
     }
     return actions;
 }
@@ -245,9 +277,19 @@ std::unique_ptr<CommandCallAction> parseCommandCall(std::unique_ptr<Action> comm
     std::vector<std::unique_ptr<Action>> args = parseArguments(it, end);
     std::unique_ptr<CommandCallAction> exec = std::make_unique<CommandCallAction>(std::move(commandNameAction), std::move(args));
     skipWhitespace(it, end);
-    consumeCharacter(')', it, end, "Expected ')'");
     start = it;
     return exec;
+}
+
+std::unique_ptr<CommandCallAction> parseExplicitCommandCall(std::string::const_iterator &start, std::string::const_iterator end)
+{
+    skipWhitespace(start, end);
+    std::unique_ptr<GetConstStringAction> action = parseConstString(start, end);
+    if (action == nullptr)
+    {
+        throwParsingError(start, "Expected command name");
+    }
+    return parseCommandCall(std::move(action), start, end);
 }
 
 std::unique_ptr<BinaryOperationAction> parseBinaryOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end)
@@ -255,11 +297,10 @@ std::unique_ptr<BinaryOperationAction> parseBinaryOperation(Operator op, std::st
     std::vector<std::unique_ptr<Action>> args = parseArguments(start, end);
     if (args.size() != 2)
     {
-        throwError("Operator expected only two arguments");
+        throwParsingError(start, "Operator expected only two arguments");
         return nullptr;
     }
     skipWhitespace(start, end);
-    consumeCharacter(')', start, end, "Expected ')'");
     return std::make_unique<BinaryOperationAction>(op, std::move(args));
 }
 
@@ -268,24 +309,23 @@ std::unique_ptr<AssignOperationAction> parseBinaryAssignmentOperation(Operator o
     skipWhitespace(start, end);
     std::string name = parseVariableName(start, end);
     skipWhitespace(start, end);
-    std::unique_ptr<Action> val = parseArgument(start, end);
+    std::unique_ptr<Action> val = parseFunction(start, end);
     if (val == nullptr)
     {
-        throwError("Expected value");
+        throwParsingError(start, "Expected value");
     }
     skipWhitespace(start, end);
-    consumeCharacter(')', start, end, "Expected ')'");
     return std::make_unique<AssignOperationAction>(op, name, std::move(val));
 }
 
 std::unique_ptr<BranchAction> parseBranch(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
     skipWhitespace(start, end);
-    std::unique_ptr<Action> condition = parseArgument(start, end);
+    std::unique_ptr<Action> condition = parseFunction(start, end);
     skipWhitespace(start, end);
     if (condition == nullptr)
     {
-        throwError("Expected condition");
+        throwParsingError(start, "Expected condition");
     }
     skipWhitespace(start, end);
     std::unique_ptr<SequenceAction> thenBranch = parseSequence(start, end);
@@ -297,7 +337,6 @@ std::unique_ptr<BranchAction> parseBranch(std::string::const_iterator &start, st
     skipWhitespace(start, end);
     std::unique_ptr<SequenceAction> elseBranch = parseSequence(start, end);
     skipWhitespace(start, end);
-    consumeCharacter(')', start, end, "Expected ')'");
     return std::make_unique<BranchAction>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
 }
 
@@ -308,7 +347,7 @@ std::unique_ptr<SequenceAction> parseSequence(std::string::const_iterator &start
     while (start != end && *start != ')')
     {
         skipWhitespace(start, end);
-        std::unique_ptr<Action> act = parseAction(start, end);
+        std::unique_ptr<Action> act = parseFunction(start, end);
         if (act == nullptr)
         {
             break;
@@ -331,17 +370,17 @@ std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_itera
         std::string name = parseVariableName(start, end);
         if (variables.count(name))
         {
-            throwError("Variable with name " + name + " is already present in this block declaration");
+            throwParsingError(start, "Variable with name " + name + " is already present in this block declaration");
         }
         else if (name == "")
         {
-            throwError("Expected variable name");
+            throwParsingError(start, "Expected variable name");
         }
         skipWhitespace(start, end);
-        std::unique_ptr<Action> defaultValue = parseArgument(start, end);
+        std::unique_ptr<Action> defaultValue = parseFunction(start, end);
         if (defaultValue == nullptr)
         {
-            throwError("Expected default value for variable");
+            throwParsingError(start, "Expected default value for variable");
         }
         consumeCharacter(')', start, end, "Expected ')'");
         skipWhitespace(start, end);
@@ -352,9 +391,8 @@ std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_itera
     std::unique_ptr<Action> act = parseSequence(start, end);
     if (act == nullptr)
     {
-        throwError("Expected body");
+        throwParsingError(start, "Expected body");
     }
-    consumeCharacter(')', start, end, "Expected ')'");
     return std::make_unique<VariableBlockAction>(std::move(variables), std::move(act));
 }
 
@@ -363,6 +401,5 @@ std::unique_ptr<CreateArrayAction> parseArrayCreation(std::string::const_iterato
     skipWhitespace(start, end);
     std::vector<std::unique_ptr<Action>> values = parseArguments(start, end);
     skipWhitespace(start, end);
-    consumeCharacter(')', start, end, "Expected ')'");
     return std::make_unique<CreateArrayAction>(std::move(values));
 }
