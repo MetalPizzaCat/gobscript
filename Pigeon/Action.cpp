@@ -237,9 +237,41 @@ Value AssignOperationAction::execute(State &state) const
 Value CreateArrayAction::execute(State &state) const
 {
     std::vector<Value> values;
-    for(auto const& action : getArguments())
+    for (auto const &action : getArguments())
     {
         values.push_back(action->execute(state));
     }
     return Value(state.createArray(values));
+}
+
+Value BranchAction::execute(State &state) const
+{
+    Value cond = m_cond->execute(state);
+    if (cond.index() != ValueType::Integer)
+    {
+        throwError("Expected an integer");
+    }
+    if (std::get<int64_t>(cond))
+    {
+        return m_then->execute(state);
+    }
+    else if (m_else != nullptr)
+    {
+        return m_else->execute(state);
+    }
+    return Value(0);
+}
+
+Value SequenceAction::execute(State &state) const
+{
+    Value result = Value(0);
+    for (size_t i = 0; i < getArgumentCount(); i++)
+    {
+        auto it = getArgument(i);
+        if (getArgument(i) != nullptr)
+        {
+            result = getArgument(i)->execute(state);
+        }
+    }
+    return result;
 }

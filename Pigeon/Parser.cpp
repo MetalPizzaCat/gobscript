@@ -1,5 +1,6 @@
 #include "Parser.hpp"
 #include <limits>
+#include <algorithm>
 void consumeCharacter(char character, std::string::const_iterator &start, std::string::const_iterator end, std::string const &errorMessage)
 {
     if (start == end || *start != character)
@@ -41,31 +42,33 @@ void skipWhitespace(std::string::const_iterator &start, std::string::const_itera
 std::unique_ptr<GetConstStringAction> parseConstString(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
     std::string result = "";
+    std::string::const_iterator it = start;
     bool expectedClosingMark = *start == '"';
     if (expectedClosingMark)
     {
-        start++;
+        it++;
     }
     bool hitClosingMark = false;
-    for (; start != end && *start != ' ' && *start != '(' && *start != ')' && !(expectedClosingMark && *start == '"'); start++)
+    for (; it != end && *it != ' ' && *it != '(' && *it != ')' && !(expectedClosingMark && *it == '"'); it++)
     {
-        result += *start;
+        result += *it;
     }
     if (expectedClosingMark)
     {
-        if (*start != '"')
+        if (*it != '"')
         {
-            throwParsingError(start, "expected closing '\"'");
+            throwParsingError(it, "expected closing '\"'");
         }
         else
         {
-            start++;
+            it++;
         }
     }
-    if (result == "")
+    if (result == "" || (!expectedClosingMark && std::find(Keywords.begin(), Keywords.end(), result) != Keywords.end()))
     {
         return nullptr;
     }
+    start = it;
     return std::make_unique<GetConstStringAction>(result);
 }
 std::string parseVariableName(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -170,6 +173,13 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         start = it;
         return var;
     }
+    else if (expectString("seq", it, end))
+    {
+        it += 3;
+        std::unique_ptr<SequenceAction> var = parseSequence(it, end);
+        start = it;
+        return var;
+    }
     // check if any preexisting action
     else if (std::optional<Operator> op = parseOperationType(it, end); op.has_value())
     {
@@ -185,16 +195,6 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         // call the op parser
         return binOp;
     }
-    // else if (std::unique_ptr<GetConstStringAction> action = parseConstString(it, end); action != nullptr)
-    // {
-    //     std::unique_ptr<CommandCallAction> exec = parseCommandCall(std::move(action), it, end);
-    //     start = it;
-    //     return exec;
-    // }
-    // else
-    // {
-    //     throwParsingError(start, "Expected operation");
-    // }
     return nullptr;
 }
 
@@ -328,14 +328,24 @@ std::unique_ptr<BranchAction> parseBranch(std::string::const_iterator &start, st
         throwParsingError(start, "Expected condition");
     }
     skipWhitespace(start, end);
-    std::unique_ptr<SequenceAction> thenBranch = parseSequence(start, end);
+    std::unique_ptr<Action> thenBranch = parseFunction(start, end);
+    if (thenBranch == nullptr)
+    {
+        throwParsingError(start, "Expected body");
+    }
     skipWhitespace(start, end);
+    bool hasElse = false;
     if (expectString("else", start, end))
     {
+        hasElse = true;
         start += 4;
     }
     skipWhitespace(start, end);
-    std::unique_ptr<SequenceAction> elseBranch = parseSequence(start, end);
+    std::unique_ptr<Action> elseBranch = parseFunction(start, end);
+    if (elseBranch == nullptr && hasElse)
+    {
+        throwParsingError(start, "Expected else body");
+    }
     skipWhitespace(start, end);
     return std::make_unique<BranchAction>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
 }
@@ -353,6 +363,10 @@ std::unique_ptr<SequenceAction> parseSequence(std::string::const_iterator &start
             break;
         }
         acts.push_back(std::move(act));
+    }
+    if (acts.empty())
+    {
+        return nullptr;
     }
     return std::make_unique<SequenceAction>(std::move(acts));
 }

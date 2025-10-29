@@ -32,3 +32,19 @@ std::string ArrayNode::toString() const
     }
     return temp + "]";
 }
+
+bool ArrayNode::equalTo(ArrayNode const *other)
+{
+    if (m_values.size() != other->m_values.size())
+    {
+        return false;
+    }
+    for (size_t i = 0; i < m_values.size(); i++)
+    {
+        if(!areValuesTheSame(m_values[i], other->m_values[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}

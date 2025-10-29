@@ -20,10 +20,12 @@ bool isValueNull(Value const &val)
 {
     switch (val.index())
     {
-    case 0:
+    case ValueType::Integer:
         return std::get<int64_t>(val) == 0;
-    case 1:
+    case ValueType::String:
         return std::get<StringNode *>(val)->getValue() == "";
+    case ValueType::Array:
+        return std::get<ArrayNode *>(val)->isEmpty();
     default:
         throw std::runtime_error("Rest of value null handling not implemented");
     }
@@ -46,8 +48,8 @@ bool areValuesTheSame(Value const &a, Value const &b)
     }
     else if (a.index() == ValueType::Array && b.index() == ValueType::Array)
     {
-        throwError("Array equality not implemented");
-        return std::get<StringNode *>(a)->getValue() == std::get<StringNode *>(b)->getValue();
+        
+        return std::get<ArrayNode *>(a)->equalTo(std::get<ArrayNode *>(b));
     }
 
     else if (a.index() == ValueType::Integer && b.index() == ValueType::String)
@@ -76,8 +78,7 @@ bool areValuesEqual(Value const &a, Value const &b)
     case ValueType::String:
         return std::get<StringNode *>(a) == std::get<StringNode *>(b);
     case ValueType::Array:
-        throwError("Array comparison not implemented");
-        return std::get<int64_t>(a) == std::get<int64_t>(a);
+        return std::get<ArrayNode *>(a) == std::get<ArrayNode *>(b);
     }
     // should not be reachable but exists in case of future changes
     return false;

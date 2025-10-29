@@ -16,6 +16,10 @@ public:
 
     std::string toString() const;
 
+    bool isEmpty() const { return m_values.empty(); }
+
+    bool equalTo(ArrayNode const *other);
+
 private:
     std::vector<Value> m_values;
 };

@@ -78,7 +78,7 @@ class GetConstNumberAction : public Action
 {
 public:
     explicit GetConstNumberAction(int64_t val) : m_value(val) {}
-    Value execute(State &state) const override { return Value(m_value); }
+    Value execute(State &state) const override { return Value((int64_t)m_value); }
 
 private:
     int64_t m_value;
@@ -102,19 +102,7 @@ class SequenceAction : public Action
 {
 public:
     explicit SequenceAction(std::vector<std::unique_ptr<Action>> actions) : Action(std::move(actions)) {}
-    Value execute(State &state) const override
-    {
-        for (size_t i = 0; i < getArgumentCount(); i++)
-        {
-            auto it = getArgument(i);
-            if (getArgument(i) != nullptr)
-            {
-                getArgument(i)->execute(state);
-            }
-        }
-        // TODO: Make it return value of the last action
-        return Value(0);
-    }
+    Value execute(State &state) const override;
 };
 
 class BranchAction : public Action
@@ -128,23 +116,7 @@ public:
     {
     }
 
-    Value execute(State &state) const override
-    {
-        Value cond = m_cond->execute(state);
-        if (cond.index() != ValueType::Integer)
-        {
-            throwError("Expected an integer");
-        }
-        if (std::get<int64_t>(cond))
-        {
-            return m_then->execute(state);
-        }
-        else if (m_else != nullptr)
-        {
-            return m_else->execute(state);
-        }
-        return Value(0);
-    }
+    Value execute(State &state) const override;
 
 private:
     std::unique_ptr<Action> m_cond;
