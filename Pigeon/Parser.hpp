@@ -37,8 +37,6 @@ std::optional<Operator> parseAssignOperationType(std::string::const_iterator &st
 
 std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::string::const_iterator const &end);
 
-std::vector<std::unique_ptr<Action>> parseArgumentList(std::string::const_iterator &start, std::string::const_iterator const &end);
-
 std::unique_ptr<Action> parseArgument(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 std::unique_ptr<VariableAccessAction> parseVariableAccess(std::string::const_iterator &start, std::string::const_iterator const &end);
@@ -79,3 +77,9 @@ std::unique_ptr<BranchAction> parseBranch(std::string::const_iterator &start, st
 std::unique_ptr<SequenceAction> parseSequence(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+/// @brief Parse a sequence of values that will be created like a creation of an array
+/// @param start 
+/// @param end 
+/// @return 
+std::unique_ptr<CreateArrayAction> parseArrayCreation(std::string::const_iterator &start, std::string::const_iterator const &end);

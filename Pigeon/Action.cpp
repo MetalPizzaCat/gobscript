@@ -233,3 +233,13 @@ Value AssignOperationAction::execute(State &state) const
     }
     return Value();
 }
+
+Value CreateArrayAction::execute(State &state) const
+{
+    std::vector<Value> values;
+    for(auto const& action : getArguments())
+    {
+        values.push_back(action->execute(state));
+    }
+    return Value(state.createArray(values));
+}

@@ -165,6 +165,13 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         start = it;
         return var;
     }
+    else if (expectString("array", it, end))
+    {
+        it += 5;
+        std::unique_ptr<CreateArrayAction> var = parseArrayCreation(it, end);
+        start = it;
+        return var;
+    }
     // check if any preexisting action
     else if (std::optional<Operator> op = parseOperationType(it, end); op.has_value())
     {
@@ -349,4 +356,13 @@ std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_itera
     }
     consumeCharacter(')', start, end, "Expected ')'");
     return std::make_unique<VariableBlockAction>(std::move(variables), std::move(act));
+}
+
+std::unique_ptr<CreateArrayAction> parseArrayCreation(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    skipWhitespace(start, end);
+    std::vector<std::unique_ptr<Action>> values = parseArguments(start, end);
+    skipWhitespace(start, end);
+    consumeCharacter(')', start, end, "Expected ')'");
+    return std::make_unique<CreateArrayAction>(std::move(values));
 }

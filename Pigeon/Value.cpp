@@ -1,13 +1,16 @@
 #include "Value.hpp"
-
+#include "Memory.hpp"
+#include "Array.hpp"
 std::string convertValueToString(Value const &val)
 {
     switch (val.index())
     {
-    case 0:
+    case ValueType::Integer:
         return std::to_string(std::get<int64_t>(val));
-    case 1:
+    case ValueType::String:
         return std::get<StringNode *>(val)->getValue();
+    case ValueType::Array:
+        return std::get<ArrayNode *>(val)->toString();
     default:
         throw std::runtime_error("Rest of value handling not implemented");
     }

@@ -198,3 +198,10 @@ private:
     std::unique_ptr<Action> m_commandName;
     std::vector<std::unique_ptr<Action>> m_arguments;
 };
+
+class CreateArrayAction : public Action
+{
+public:
+    explicit CreateArrayAction(std::vector<std::unique_ptr<Action>> items) : Action(std::move(items)) {}
+    Value execute(State &state) const override;
+};

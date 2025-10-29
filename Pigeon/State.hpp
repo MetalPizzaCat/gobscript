@@ -1,32 +1,24 @@
 #pragma once
 #include "Memory.hpp"
 #include "Value.hpp"
+#include "Array.hpp"
 #include <map>
 #include <vector>
 #include <optional>
 class State
 {
 public:
-    StringNode *createString(std::string const &base)
-    {
-        StringNode *node = new StringNode(base);
-        m_root.pushBack(node);
-        return node;
-    }
+    StringNode *createString(std::string const &base);
 
-    // std::vector<Value> *createArray()
-    // {
-    //     m_arrays.push_back(std::make_unique<std::vector<Value>>({}));
-    //     return m_arrays.back().get();
-    // }
-    
-    std::optional<Value> getVariableValue(std::string const& name);
+    ArrayNode *createArray(std::vector<Value> const values);
 
-    std::optional<Value> setVariableValue(std::string const& name, Value val);
+    std::optional<Value> getVariableValue(std::string const &name);
 
-    bool doesVariableExist(std::string const& name);
+    std::optional<Value> setVariableValue(std::string const &name, Value val);
 
-    bool doesVariableExistAndOfType(std::string const& name, ValueType type);
+    bool doesVariableExist(std::string const &name);
+
+    bool doesVariableExistAndOfType(std::string const &name, ValueType type);
 
     /// @brief Create a new set of variables that will be available in a given block
     /// @param variables List of all variables to create with default values

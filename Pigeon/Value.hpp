@@ -4,7 +4,9 @@
 #include <string>
 #include <stdexcept>
 #include "Error.hpp"
-#include "Memory.hpp"
+
+class StringNode;
+class ArrayNode;
 
 using Value = std::variant<int64_t, StringNode *, ArrayNode *>;
 

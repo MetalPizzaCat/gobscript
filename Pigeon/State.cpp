@@ -1,5 +1,19 @@
 #include "State.hpp"
 
+StringNode *State::createString(std::string const &base)
+{
+    StringNode *node = new StringNode(base);
+    m_root.pushBack(node);
+    return node;
+}
+
+ArrayNode *State::createArray(std::vector<Value> const values)
+{
+    ArrayNode *node = new ArrayNode(values);
+    m_root.pushBack(node);
+    return node;
+}
+
 std::optional<Value> State::getVariableValue(std::string const &name)
 {
     for (std::vector<std::map<std::string, Value>>::reverse_iterator it = m_variables.rbegin(); it != m_variables.rend(); it++)

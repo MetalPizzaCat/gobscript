@@ -54,6 +54,3 @@ private:
     std::string m_value;
 };
 
-class ArrayNode : public MemoryNode
-{
-};
