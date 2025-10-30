@@ -22,7 +22,7 @@ std::unique_ptr<GetConstStringAction> parseConstString(std::string::const_iterat
 /// @param start
 /// @param end
 /// @return
-std::string parseVariableName(std::string::const_iterator &start, std::string::const_iterator const &end);
+std::optional<std::string> parseVariableName(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 std::unique_ptr<GetConstNumberAction> parseConstNumber(std::string::const_iterator &start, std::string::const_iterator const &end);
 
@@ -38,6 +38,18 @@ std::optional<Operator> parseOperationType(std::string::const_iterator &start, s
 /// @return
 std::optional<Operator> parseAssignOperationType(std::string::const_iterator &start, std::string::const_iterator const &end);
 
+/// @brief Parse declaration of a function following the `(func () )` approach
+/// @param start 
+/// @param end 
+/// @return 
+std::unique_ptr<FunctionDeclarationAction> parseUserFunctionDeclaration(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+/// @brief Parse call to a function following `(call name arg arg arg)`
+/// @param start 
+/// @param end 
+/// @return 
+std::unique_ptr<FunctionCallAction> parseUserFunctionCall(std::string::const_iterator &start, std::string::const_iterator const &end);
+
 /**
  * @brief Attempt to parse keyword values, constants and variable access
  *
@@ -48,6 +60,12 @@ std::optional<Operator> parseAssignOperationType(std::string::const_iterator &st
 std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 std::unique_ptr<Action> parseArgument(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+/// @brief  Parse list of arguments separated by space characters and ending with closing bracket. Bracket will not be consumed
+/// @param start 
+/// @param end 
+/// @return 
+std::vector<std::unique_ptr<Action>> parseArguments(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 /**
  * @brief Function is anything contained within `()`. This means that each layer of brackets simply creates a layer of functions that just return their contents
@@ -69,6 +87,8 @@ std::unique_ptr<VariableAccessAction> parseVariableAccess(std::string::const_ite
  * @return std::unique_ptr<CommandCallAction>
  */
 std::unique_ptr<CommandCallAction> parseCommandCall(std::unique_ptr<Action> commandNameAction, std::string::const_iterator &start, std::string::const_iterator end);
+
+
 
 /**
  * @brief Parse a system call, unlike `parseCommandCall` this expected `exec` at the start
@@ -112,3 +132,6 @@ std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_itera
 /// @param end
 /// @return
 std::unique_ptr<CreateArrayAction> parseArrayCreation(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+
+std::vector<std::unique_ptr<Action>> parseTopLevelDeclarations(std::string::const_iterator &start, std::string::const_iterator const &end);

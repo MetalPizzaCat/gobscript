@@ -17,5 +17,7 @@ add_executable(gsh main.cpp
     Pigeon/Error.cpp
     Pigeon/Array.hpp
     Pigeon/Array.cpp
+    Pigeon/Function.hpp
+    Pigeon/Function.cpp
 )
 

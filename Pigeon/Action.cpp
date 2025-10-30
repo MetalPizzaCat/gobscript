@@ -1,5 +1,6 @@
 #include "Action.hpp"
 #include "State.hpp"
+#include "Function.hpp"
 Value BinaryOperationAction::execute(State &state) const
 {
     Value a = getArgument(0)->execute(state);
@@ -121,6 +122,7 @@ Value CommandCallAction::execute(State &state) const
     {
         args.push_back(arg.c_str());
     }
+    args.push_back(nullptr);
     int pipefd[2];
     pipe(pipefd);
     pid_t pid = fork();
@@ -130,7 +132,7 @@ Value CommandCallAction::execute(State &state) const
         dup2(pipefd[1], 1);
         dup2(pipefd[1], 2);
         close(pipefd[1]);
-        execv(programName.c_str(), (char *const *)args.data());
+        execvp(programName.c_str(), (char *const *)args.data());
         exit(127);
     }
     else
@@ -273,5 +275,33 @@ Value SequenceAction::execute(State &state) const
             result = getArgument(i)->execute(state);
         }
     }
+    return result;
+}
+
+Value FunctionDeclarationAction::execute(State &state) const
+{
+    state.addFunction(m_name, m_arguments, m_body.get());
+    return Value();
+}
+
+Value FunctionCallAction::execute(State &state) const
+{
+    std::optional<Function> f = state.getFunction(m_name);
+    if (!f.has_value())
+    {
+        throwError("No function named '" + m_name + "' found");
+    }
+    if (f.value().arguments.size() != getArgumentCount())
+    {
+        throwError("Function '" + m_name + "' expected " + std::to_string(f.value().arguments.size()) + " arguments, but got " + std::to_string(getArgumentCount()));
+    }
+    std::map<std::string, Value> variables;
+    for (size_t i = 0; i < getArgumentCount(); i++)
+    {
+        variables[f.value().arguments[i]] = getArgument(i)->execute(state);
+    }
+    state.pushVariableScope(variables);
+    Value result = f.value().body->execute(state);
+    state.popVariableScope();
     return result;
 }

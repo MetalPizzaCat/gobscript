@@ -177,3 +177,33 @@ public:
     explicit CreateArrayAction(std::vector<std::unique_ptr<Action>> items) : Action(std::move(items)) {}
     Value execute(State &state) const override;
 };
+
+class FunctionDeclarationAction : public Action
+{
+public:
+    explicit FunctionDeclarationAction(std::string const &name,
+                                       std::unique_ptr<Action> body,
+                                       std::vector<std::string> const &arguments) : m_name(name),
+                                                                                    m_arguments(arguments),
+                                                                                    m_body(std::move(body))
+    {
+    }
+    Value execute(State &state) const override;
+
+private:
+    std::string m_name;
+    std::unique_ptr<Action> m_body;
+    std::vector<std::string> m_arguments;
+};
+
+class FunctionCallAction : public Action
+{
+public:
+    explicit FunctionCallAction(std::string const &name, std::vector<std::unique_ptr<Action>> arguments) : m_name(name), Action(std::move(arguments))
+    {
+    }
+    Value execute(State &state) const override;
+
+private:
+    std::string m_name;
+};

@@ -1,5 +1,5 @@
 #include "State.hpp"
-
+#include "Action.hpp"
 StringNode *State::createString(std::string const &base)
 {
     StringNode *node = new StringNode(base);
@@ -73,4 +73,18 @@ void State::popVariableScope()
 {
     m_variables.pop_back();
     // TODO: Add memory freeing
+}
+
+void State::addFunction(std::string const &name, std::vector<std::string> arguments, Action const *body)
+{
+    m_functions.emplace(name, Function(body, arguments));
+}
+
+std::optional<Function> State::getFunction(std::string const &name) const
+{
+    if (m_functions.count(name) > 0)
+    {
+        return m_functions.at(name);
+    }
+    return {};
 }

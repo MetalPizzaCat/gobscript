@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <optional>
+#include "Function.hpp"
 class State
 {
 public:
@@ -27,7 +28,11 @@ public:
     /// @brief Pop past variable scope and free up memory of all unused objects
     void popVariableScope();
 
+    void addFunction(std::string const &name, std::vector<std::string> arguments, Action const *body);
+
+    std::optional<Function> getFunction(std::string const& name) const;
 private:
     std::vector<std::map<std::string, Value>> m_variables;
     MemoryNode m_root;
+    std::map<std::string, Function> m_functions;
 };
