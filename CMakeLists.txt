@@ -19,5 +19,8 @@ add_executable(gsh main.cpp
     Pigeon/Array.cpp
     Pigeon/Function.hpp
     Pigeon/Function.cpp
+    Pigeon/StandardFunctions.hpp
+    GobScriptHelper/StandardFunctions.hpp
+    GobScriptHelper/StandardFunctions.cpp
 )
 

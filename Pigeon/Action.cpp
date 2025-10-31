@@ -325,3 +325,18 @@ Value WhileLoopAction::execute(State &state) const
     }
     return result;
 }
+
+Value SystemFunctionCallFunction::execute(State &state) const
+{
+    if (std::optional<State::NativeFunction> f = state.getStandardFunction(m_funcId); f.has_value())
+    {
+        std::vector<Value> args;
+        for (size_t i = 0; i < getArgumentCount(); i++)
+        {
+            args.push_back(getArgument(i)->execute(state));
+        }
+        return f.value()(args);
+    }
+    throwError("Invalid standard library function referenced");
+    return Value();
+}

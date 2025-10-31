@@ -6,6 +6,7 @@
 #include "Action.hpp"
 #include "Operation.hpp"
 #include "Error.hpp"
+#include "StandardFunctions.hpp"
 
 /// @brief List of all keywords that should not be confused for strings
 static const std::vector<std::string> Keywords = {"if", "else", "exec", "print", "array", "seq", "len"};
@@ -16,6 +17,10 @@ bool expectString(std::string const &expected, std::string::const_iterator start
 
 void skipWhitespace(std::string::const_iterator &start, std::string::const_iterator const &end);
 
+/// @brief Attempt to parse a const string access
+/// @param start 
+/// @param end 
+/// @return Action that returns constant string on success or nullptr if string is empty or is a reserved keyword
 std::unique_ptr<GetConstStringAction> parseConstString(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 /// @brief Parse name of a variable. Variable name can only have letters, digits, underscores and dashes. Name is only considered valid if it can reach separating character
@@ -133,9 +138,18 @@ std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_itera
 /// @return
 std::unique_ptr<CreateArrayAction> parseArrayCreation(std::string::const_iterator &start, std::string::const_iterator const &end);
 
-
+/// @brief Special function that will go over all the code and parse function declarations and actions into an array of actions
+/// @param start 
+/// @param end 
+/// @return 
 std::vector<std::unique_ptr<Action>> parseTopLevelDeclarations(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 std::unique_ptr<ForLoopAction> parseForLoop(std::string::const_iterator &start, std::string::const_iterator const &end);
 
 std::unique_ptr<WhileLoopAction> parseWhileLoop(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+/// @brief Parse a call to system function
+/// @param start 
+/// @param end 
+/// @return Action that calls a system function from the state of nullptr if no action is found by name
+std::unique_ptr<SystemFunctionCallFunction> parseSystemFunction(std::string::const_iterator &start, std::string::const_iterator const &end);

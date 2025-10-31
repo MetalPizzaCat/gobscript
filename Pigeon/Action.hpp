@@ -241,3 +241,14 @@ private:
     std::unique_ptr<Action> m_cond;
     std::unique_ptr<Action> m_body;
 };
+
+/// @brief System function is any function considered part of the "standard library" and refers to functions stored in the state
+class SystemFunctionCallFunction : public Action
+{
+public:
+    explicit SystemFunctionCallFunction(size_t funcId, std::vector<std::unique_ptr<Action>> args) : m_funcId(funcId), Action(std::move(args)) {}
+    Value execute(State &state) const override;
+
+private:
+    size_t m_funcId;
+};

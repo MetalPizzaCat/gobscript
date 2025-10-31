@@ -260,6 +260,11 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         start = it;
         return var;
     }
+    else if (std::unique_ptr<SystemFunctionCallFunction> func = parseSystemFunction(it, end); func != nullptr)
+    {
+        start = it;
+        return func;
+    }
     // check if any preexisting action
     else if (std::optional<Operator> op = parseOperationType(it, end); op.has_value())
     {
@@ -584,4 +589,30 @@ std::unique_ptr<WhileLoopAction> parseWhileLoop(std::string::const_iterator &sta
         throwParsingError(start, "Expected body for while loop");
     }
     return std::make_unique<WhileLoopAction>(std::move(cond), std::move(body));
+}
+
+std::unique_ptr<SystemFunctionCallFunction> parseSystemFunction(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    std::optional<StandardFunctionInfo> info = {};
+    std::string name;
+    for (auto const &func : StandardFunctionIds)
+    {
+        if (expectString(func.first, start, end))
+        {
+            info = func.second;
+            name = func.first;
+            start += func.first.size();
+        }
+    }
+    if (!info.has_value())
+    {
+        return nullptr;
+    }
+    skipWhitespace(start, end);
+    std::vector<std::unique_ptr<Action>> args = parseArguments(start, end);
+    if (args.size() != info.value().argumentCount && info.value().argumentCount != -1)
+    {
+        throwParsingError(start, "Function '" + name + "' expects " + std::to_string(info.value().argumentCount) + " arguments, but got " + std::to_string(args.size()));
+    }
+    return std::make_unique<SystemFunctionCallFunction>(info.value().functionId, std::move(args));
 }

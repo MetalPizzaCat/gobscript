@@ -22,6 +22,8 @@ public:
 
     int32_t getRefCount() const { return m_refCount; }
 
+    virtual size_t getLen() const { return 0; }
+
     /**
      * @brief Should be deleted by the garbage collector or not
      */
@@ -44,7 +46,9 @@ public:
     explicit StringNode(std::string const &val) : m_value(val) {}
     explicit StringNode() {}
 
-    std::string const &getValue() { return m_value; }
+    size_t getLen() const override { return m_value.size(); }
+
+    std::string &getValue() { return m_value; }
 
 private:
     std::string m_value;

@@ -104,6 +104,15 @@ std::optional<Function> State::getFunction(std::string const &name) const
     return {};
 }
 
+std::optional<State::NativeFunction> State::getStandardFunction(size_t i) const
+{
+    if (i < m_standardFunctions.size())
+    {
+        return m_standardFunctions[i];
+    }
+    return {};
+}
+
 void State::collectGarbage()
 {
     MemoryNode *prev = &m_root;
