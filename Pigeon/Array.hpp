@@ -20,6 +20,8 @@ public:
 
     bool equalTo(ArrayNode const *other);
 
+    virtual ~ArrayNode();
+
 private:
     std::vector<Value> m_values;
 };

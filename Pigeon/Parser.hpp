@@ -135,3 +135,7 @@ std::unique_ptr<CreateArrayAction> parseArrayCreation(std::string::const_iterato
 
 
 std::vector<std::unique_ptr<Action>> parseTopLevelDeclarations(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+std::unique_ptr<ForLoopAction> parseForLoop(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+std::unique_ptr<WhileLoopAction> parseWhileLoop(std::string::const_iterator &start, std::string::const_iterator const &end);

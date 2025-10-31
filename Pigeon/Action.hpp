@@ -207,3 +207,37 @@ public:
 private:
     std::string m_name;
 };
+
+class ForLoopAction : public Action
+{
+public:
+    explicit ForLoopAction(
+        std::unique_ptr<Action> init,
+        std::unique_ptr<Action> cond,
+        std::unique_ptr<Action> iter,
+        std::unique_ptr<Action> body) : m_init(std::move(init)),
+                                        m_cond(std::move(cond)),
+                                        m_iter(std::move(iter)),
+                                        m_body(std::move(body)) {}
+    Value execute(State &state) const override;
+
+private:
+    std::unique_ptr<Action> m_init;
+    std::unique_ptr<Action> m_cond;
+    std::unique_ptr<Action> m_iter;
+    std::unique_ptr<Action> m_body;
+};
+
+class WhileLoopAction : public Action
+{
+public:
+    explicit WhileLoopAction(
+        std::unique_ptr<Action> cond,
+        std::unique_ptr<Action> body) : m_cond(std::move(cond)),
+                                        m_body(std::move(body)) {}
+    Value execute(State &state) const override;
+
+private:
+    std::unique_ptr<Action> m_cond;
+    std::unique_ptr<Action> m_body;
+};

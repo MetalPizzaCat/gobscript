@@ -71,8 +71,23 @@ void State::pushVariableScope(std::map<std::string, Value> variables)
 
 void State::popVariableScope()
 {
+    if (m_variables.empty())
+    {
+        return;
+    }
+    for (std::pair<const std::string, Value> &var : m_variables.back())
+    {
+        if (var.second.index() == ValueType::Array)
+        {
+            std::get<ArrayNode *>(var.second)->decreaseRefCount();
+        }
+        else if (var.second.index() == ValueType::String)
+        {
+            std::get<StringNode *>(var.second)->decreaseRefCount();
+        }
+    }
     m_variables.pop_back();
-    // TODO: Add memory freeing
+    collectGarbage();
 }
 
 void State::addFunction(std::string const &name, std::vector<std::string> arguments, Action const *body)
@@ -87,4 +102,26 @@ std::optional<Function> State::getFunction(std::string const &name) const
         return m_functions.at(name);
     }
     return {};
+}
+
+void State::collectGarbage()
+{
+    MemoryNode *prev = &m_root;
+    MemoryNode *curr = m_root.getNext();
+    while (curr != nullptr)
+    {
+        if (!curr->isDead())
+        {
+            prev = curr;
+            curr = curr->getNext();
+            continue;
+        }
+        // if we are deleting then prev should stay the same while
+        // curr gets deleted
+        MemoryNode *del = curr;
+        prev->eraseNext();
+        curr = prev->getNext();
+
+        delete del;
+    }
 }

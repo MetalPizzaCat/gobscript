@@ -305,3 +305,23 @@ Value FunctionCallAction::execute(State &state) const
     state.popVariableScope();
     return result;
 }
+
+Value ForLoopAction::execute(State &state) const
+{
+    Value result = Value(0);
+    for (m_init->execute(state); !isValueNull(m_cond->execute(state)); m_iter->execute(state))
+    {
+        result = m_body->execute(state);
+    }
+    return result;
+}
+
+Value WhileLoopAction::execute(State &state) const
+{
+    Value result = Value(0);
+    while (!isValueNull(m_cond->execute(state)))
+    {
+        result = m_body->execute(state);
+    }
+    return result;
+}

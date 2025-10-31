@@ -246,6 +246,20 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         start = it;
         return var;
     }
+    else if (expectString("while", it, end))
+    {
+        it += 5;
+        std::unique_ptr<WhileLoopAction> var = parseWhileLoop(it, end);
+        start = it;
+        return var;
+    }
+    else if (expectString("for", it, end))
+    {
+        it += 3;
+        std::unique_ptr<ForLoopAction> var = parseForLoop(it, end);
+        start = it;
+        return var;
+    }
     // check if any preexisting action
     else if (std::optional<Operator> op = parseOperationType(it, end); op.has_value())
     {
@@ -458,7 +472,7 @@ std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_itera
         consumeCharacter('(', start, end, "Expected '('");
         skipWhitespace(start, end);
         std::optional<std::string> name = parseVariableName(start, end);
-        if (name.has_value())
+        if (!name.has_value())
         {
             throwParsingError(start, "Expected variable name");
         }
@@ -520,4 +534,54 @@ std::vector<std::unique_ptr<Action>> parseTopLevelDeclarations(std::string::cons
         skipWhitespace(start, end);
     }
     return acts;
+}
+
+std::unique_ptr<ForLoopAction> parseForLoop(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    skipWhitespace(start, end);
+    consumeCharacter('(', start, end, "Expected '(' at loop header");
+    skipWhitespace(start, end);
+    std::unique_ptr<Action> init = parseFunction(start, end);
+    if (init == nullptr)
+    {
+        throwParsingError(start, "Expected init for while loop");
+    }
+    skipWhitespace(start, end);
+    std::unique_ptr<Action> cond = parseFunction(start, end);
+    if (cond == nullptr)
+    {
+        throwParsingError(start, "Expected condition for while loop");
+    }
+    skipWhitespace(start, end);
+    std::unique_ptr<Action> iter = parseFunction(start, end);
+    if (iter == nullptr)
+    {
+        throwParsingError(start, "Expected iteration for while loop");
+    }
+    skipWhitespace(start, end);
+    consumeCharacter(')', start, end, "Expected ')' at loop header");
+    skipWhitespace(start, end);
+    std::unique_ptr<Action> body = parseFunction(start, end);
+    if (body == nullptr)
+    {
+        throwParsingError(start, "Expected body for while loop");
+    }
+    return std::make_unique<ForLoopAction>(std::move(init), std::move(cond), std::move(iter), std::move(body));
+}
+
+std::unique_ptr<WhileLoopAction> parseWhileLoop(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    skipWhitespace(start, end);
+    std::unique_ptr<Action> cond = parseFunction(start, end);
+    if (cond == nullptr)
+    {
+        throwParsingError(start, "Expected condition for while loop");
+    }
+    skipWhitespace(start, end);
+    std::unique_ptr<Action> body = parseFunction(start, end);
+    if (body == nullptr)
+    {
+        throwParsingError(start, "Expected body for while loop");
+    }
+    return std::make_unique<WhileLoopAction>(std::move(cond), std::move(body));
 }

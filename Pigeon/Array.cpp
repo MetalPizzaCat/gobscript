@@ -41,10 +41,25 @@ bool ArrayNode::equalTo(ArrayNode const *other)
     }
     for (size_t i = 0; i < m_values.size(); i++)
     {
-        if(!areValuesTheSame(m_values[i], other->m_values[i]))
+        if (!areValuesTheSame(m_values[i], other->m_values[i]))
         {
             return false;
         }
     }
     return true;
+}
+
+ArrayNode::~ArrayNode()
+{
+    for (size_t i = 0; i < m_values.size(); i++)
+    {
+        if (m_values[i].index() == ValueType::Array)
+        {
+            std::get<ArrayNode *>(m_values[i])->decreaseRefCount();
+        }
+        else if (m_values[i].index() == ValueType::String)
+        {
+            std::get<StringNode *>(m_values[i])->decreaseRefCount();
+        }
+    }
 }
