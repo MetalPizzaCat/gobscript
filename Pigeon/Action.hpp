@@ -134,6 +134,16 @@ private:
     std::string m_name;
 };
 
+class FunctionAccessAction : public Action
+{
+public:
+    explicit FunctionAccessAction(std::string const &name) : m_name(name) {}
+    Value execute(State &state) const override;
+
+private:
+    std::string m_name;
+};
+
 class VariableBlockAction : public Action
 {
 public:
@@ -147,13 +157,6 @@ public:
 private:
     std::unique_ptr<Action> m_body;
     std::map<std::string, std::unique_ptr<Action>> m_variables;
-};
-
-class ChangeDirectory
-{
-public:
-private:
-    std::string m_path;
 };
 
 class CommandCallAction : public Action
@@ -199,13 +202,15 @@ private:
 class FunctionCallAction : public Action
 {
 public:
-    explicit FunctionCallAction(std::string const &name, std::vector<std::unique_ptr<Action>> arguments) : m_name(name), Action(std::move(arguments))
+    explicit FunctionCallAction(std::unique_ptr<Action> functionAccess,
+                                std::vector<std::unique_ptr<Action>> arguments) : m_functionAccess(std::move(functionAccess)),
+                                                                                  Action(std::move(arguments))
     {
     }
     Value execute(State &state) const override;
 
 private:
-    std::string m_name;
+    std::unique_ptr<Action> m_functionAccess;
 };
 
 class ForLoopAction : public Action

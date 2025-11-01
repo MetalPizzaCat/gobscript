@@ -60,6 +60,7 @@ static const std::unordered_map<std::string, Operator> Operators = {
     {"||", Operator::Or},
     {"and", Operator::And},
     {"or", Operator::Or},
+    {"%", Operator::Modulo},
 };
 
 static const std::unordered_map<std::string, Operator> AssignOperators = {

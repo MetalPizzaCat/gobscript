@@ -10,7 +10,7 @@ public:
     explicit ArrayNode() = default;
     explicit ArrayNode(std::vector<Value> const &values);
 
-    std::optional<Value> getValuesAt(size_t i) const;
+    std::optional<Value> getValueAt(size_t i) const;
 
     void setValue(size_t i, Value val);
 

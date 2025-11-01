@@ -7,10 +7,11 @@
 #include <optional>
 #include <functional>
 #include "Function.hpp"
+
 class State
 {
 public:
-    using NativeFunction = std::function<Value(std::vector<Value> const &args)>;
+    using NativeFunction = std::function<Value(State &state, std::vector<Value> const &args)>;
 
     explicit State() = default;
 
@@ -60,11 +61,25 @@ public:
     std::optional<Function> getFunction(std::string const &name) const;
 
     std::optional<NativeFunction> getStandardFunction(size_t i) const;
+
+    /// @brief Try to find a user function at a given point in the function list
+    /// @param i
+    /// @return
+    std::optional<Function> getUserFunctionById(size_t i) const;
+
+    std::optional<std::string> getUserFunctionNameById(size_t i) const;
+
+    /// @brief Try to find id of a function with a corresponding name
+    /// @param name
+    /// @return
+    std::optional<size_t> getUserFunctionIdByName(std::string const &name) const;
+
     void collectGarbage();
 
 private:
     std::vector<NativeFunction> m_standardFunctions;
     std::vector<std::map<std::string, Value>> m_variables;
     MemoryNode m_root;
-    std::map<std::string, Function> m_functions;
+    std::vector<std::string> m_functionNames;
+    std::vector<Function> m_functions;
 };

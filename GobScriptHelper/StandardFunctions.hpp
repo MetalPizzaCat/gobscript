@@ -1,13 +1,15 @@
 #pragma once
 #include <vector>
 #include "../Pigeon/Value.hpp"
-
+#include "../Pigeon/State.hpp"
 namespace GobScriptHelper
 {
 
-    Value nativePrintLineFunction(std::vector<Value> const &args);
+    Value nativePrintLineFunction(State &state, std::vector<Value> const &args);
 
-    Value nativeLenFunction(std::vector<Value> const &args);
+    Value nativeLenFunction(State &state, std::vector<Value> const &args);
 
-    Value nativeGetFileNameSuffix(std::vector<Value> const &args);
+    Value nativeGetFileNameSuffix(State &state, std::vector<Value> const &args);
+
+    Value nativeArrayFilter(State &state, std::vector<Value> const &args);
 }

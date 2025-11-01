@@ -83,6 +83,8 @@ std::unique_ptr<Action> parseFunction(std::string::const_iterator &start, std::s
 
 std::unique_ptr<VariableAccessAction> parseVariableAccess(std::string::const_iterator &start, std::string::const_iterator const &end);
 
+std::unique_ptr<FunctionAccessAction> parseFunctionAccess(std::string::const_iterator &start, std::string::const_iterator const &end);
+
 /**
  * @brief Parse a system call. Written as any other operation but all arguments will be passed to the called program
  *

@@ -151,57 +151,55 @@ std::unique_ptr<FunctionDeclarationAction> parseUserFunctionDeclaration(std::str
     {
         return nullptr;
     }
-    start++;
-    skipWhitespace(start, end);
-    if (!expectString("func", start, end))
+    std::string::const_iterator it = start;
+    it++;
+    skipWhitespace(it, end);
+    if (!expectString("func", it, end))
     {
         return nullptr;
     }
-    start += 4;
-    skipWhitespace(start, end);
-    std::optional<std::string> name = parseVariableName(start, end);
+    it += 4;
+    skipWhitespace(it, end);
+    std::optional<std::string> name = parseVariableName(it, end);
     if (!name.has_value())
     {
-        throwParsingError(start, "Expected function name");
+        throwParsingError(it, "Expected function name");
     }
-    skipWhitespace(start, end);
-    consumeCharacter('(', start, end, "Expected argument block");
+    skipWhitespace(it, end);
+    consumeCharacter('(', it, end, "Expected argument block");
     std::vector<std::string> argumentNames;
-    while (start != end && *start != ')')
+    while (it != end && *it != ')')
     {
-        skipWhitespace(start, end);
-        if (std::optional<std::string> argName = parseVariableName(start, end); argName.has_value())
+        skipWhitespace(it, end);
+        if (std::optional<std::string> argName = parseVariableName(it, end); argName.has_value())
         {
             argumentNames.push_back(argName.value());
         }
-        skipWhitespace(start, end);
+        skipWhitespace(it, end);
     }
-    consumeCharacter(')', start, end, "Expected ')'");
-    skipWhitespace(start, end);
-    std::unique_ptr<Action> body = parseFunction(start, end);
+    consumeCharacter(')', it, end, "Expected ')'");
+    skipWhitespace(it, end);
+    std::unique_ptr<Action> body = parseFunction(it, end);
     if (body == nullptr)
     {
-        throwParsingError(start, "Expected function body");
+        throwParsingError(it, "Expected function body");
     }
-    consumeCharacter(')', start, end, "Expected ')'");
+    skipWhitespace(it, end);
+    consumeCharacter(')', it, end, "Expected ')'");
+    start = it;
     return std::make_unique<FunctionDeclarationAction>(name.value(), std::move(body), argumentNames);
 }
 
 std::unique_ptr<FunctionCallAction> parseUserFunctionCall(std::string::const_iterator &start, std::string::const_iterator const &end)
 {
-    if (*start != ':')
-    {
-        return nullptr;
-    }
-    start++;
     skipWhitespace(start, end);
-    std::optional<std::string> funcName = parseVariableName(start, end);
-    if (!funcName.has_value())
+    std::unique_ptr<Action> functionAccess = parseFunction(start, end);
+    if (functionAccess == nullptr)
     {
         throwParsingError(start, "Expected function name");
     }
     std::vector<std::unique_ptr<Action>> args = parseArguments(start, end);
-    std::unique_ptr<FunctionCallAction> exec = std::make_unique<FunctionCallAction>(funcName.value(), std::move(args));
+    std::unique_ptr<FunctionCallAction> exec = std::make_unique<FunctionCallAction>(std::move(functionAccess), std::move(args));
     skipWhitespace(start, end);
     return exec;
 }
@@ -229,6 +227,13 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
     {
         it += 4;
         std::unique_ptr<CommandCallAction> var = parseExplicitCommandCall(it, end);
+        start = it;
+        return var;
+    }
+    else if (expectString("call", it, end))
+    {
+        it += 4;
+        std::unique_ptr<FunctionCallAction> var = parseUserFunctionCall(it, end);
         start = it;
         return var;
     }
@@ -280,11 +285,6 @@ std::unique_ptr<Action> parseAction(std::string::const_iterator &start, std::str
         // call the op parser
         return binOp;
     }
-    else if (std::unique_ptr<FunctionCallAction> func = parseUserFunctionCall(it, end); func != nullptr)
-    {
-        start = it;
-        return func;
-    }
     return nullptr;
 }
 
@@ -294,6 +294,10 @@ std::unique_ptr<Action> parseArgument(std::string::const_iterator &start, std::s
     if (std::unique_ptr<VariableAccessAction> varAcc = parseVariableAccess(start, end); varAcc != nullptr)
     {
         return varAcc;
+    }
+    if (std::unique_ptr<FunctionAccessAction> funcAcc = parseFunctionAccess(start, end); funcAcc != nullptr)
+    {
+        return funcAcc;
     }
     else if (std::unique_ptr<GetConstNumberAction> num = parseConstNumber(start, end); num != nullptr)
     {
@@ -321,6 +325,7 @@ std::unique_ptr<Action> parseFunction(std::string::const_iterator &start, std::s
         skipWhitespace(start, end);
         if (*start == ')')
         {
+            start++;
             return std::make_unique<GetConstNumberAction>(0);
         }
         std::unique_ptr<Action> func = parseFunction(start, end);
@@ -349,6 +354,21 @@ std::unique_ptr<VariableAccessAction> parseVariableAccess(std::string::const_ite
         return std::make_unique<VariableAccessAction>(name.value());
     }
     throwParsingError(start, "Expected variable name");
+    return nullptr;
+}
+
+std::unique_ptr<FunctionAccessAction> parseFunctionAccess(std::string::const_iterator &start, std::string::const_iterator const &end)
+{
+    if (*start != ':')
+    {
+        return nullptr;
+    }
+    start++;
+    if (std::optional<std::string> name = parseVariableName(start, end); name.has_value())
+    {
+        return std::make_unique<FunctionAccessAction>(name.value());
+    }
+    throwParsingError(start, "Expected function name");
     return nullptr;
 }
 

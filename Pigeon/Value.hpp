@@ -4,18 +4,31 @@
 #include <string>
 #include <stdexcept>
 #include "Error.hpp"
-
+#include <cstdint>
 class StringNode;
 class ArrayNode;
 
-using Value = std::variant<int64_t, StringNode *, ArrayNode *>;
+using IntegerType = int64_t;
+struct FunctionReference
+{
+    uint32_t id;
+    bool native;
+};
+
+using Value = std::variant<IntegerType, StringNode *, ArrayNode *, FunctionReference>;
 
 enum ValueType
 {
     Integer = 0,
     String = 1,
-    Array = 2
+    Array = 2,
+    FunctionRef = 3
 };
+
+inline IntegerType getValueAsInt(Value const &v) { return std::get<IntegerType>(v); }
+inline StringNode *getValueAsString(Value const &v) { return std::get<StringNode *>(v); }
+inline ArrayNode *getValueAsArray(Value const &v) { return std::get<ArrayNode *>(v); }
+inline FunctionReference getValueAsFunction(Value const &v) { return std::get<FunctionReference>(v); }
 
 std::string convertValueToString(Value const &val);
 

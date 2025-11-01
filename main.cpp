@@ -13,8 +13,17 @@
 
 #include "GobScriptHelper/StandardFunctions.hpp"
 
-
-
+/*
+(func f1 (a) (print $a $a))
+(func action (callback a)
+    (let ((i 0)) 
+        (for (() (< $i 10) (+= i 1))
+             (call $callback $a)
+        )
+    )
+)
+(call :action :f1 3)
+*/
 int main(int, char **)
 {
     std::string currentPath = "./";
@@ -22,14 +31,28 @@ int main(int, char **)
     //(exec \"/bin/echo\" \"not\" $a)
     // std::string program = "(let ((a (array 1 2 3 4 5))) (((exec /bin/echo $a))) (= a lmao) (if (== $a lmao)  (exec \"/bin/echo\" $a) else (exec \"/bin/echo\" \"not\" $a)))";
     //    std::string program = "(let ((var1 (array lmao 1 \"hehehe\"))) (exec /bin/echo (if ((== (array lmao 1 \"hehehe\") $var1)) (seq (23) (12) ($var1)) else 23)))";
-    std::string program = "print (len (array haha no lmao weae 2322 (+ 2 3)))";
+    std::string program = R"GOB(
+
+(func f1 (a) (print $a $a))
+(func action (callback a)
+    (let ((i 0)) 
+        (for (() (< $i 10) (+= i 1))
+             (call $callback $a)
+        )
+    )
+)
+(func even (val) (if (== 0 (% $val 2)) (1) else (0)))
+(call :action :f1 3)
+(print (filter (array 1 2 3 4 5 6) :even))
+
+)GOB";
     // std::string program = "(func f1 (a b c) (+ (+ $a $c) (- $b $b))) (func f2 () (7))  (exec echo (:f1 (:f2) 5 3))";
     //  (let ((a 0) (b 3) (c 3)) (exec echo (get a) (get b) (get c))
     std::string::const_iterator it = program.begin();
     try
     {
         using namespace GobScriptHelper;
-        State state({nativePrintLineFunction, nativeLenFunction});
+        State state({nativePrintLineFunction, nativeLenFunction, nativeArrayFilter});
         std::vector<std::unique_ptr<Action>> prog = parseTopLevelDeclarations(it, program.end());
         for (auto const &act : prog)
         {

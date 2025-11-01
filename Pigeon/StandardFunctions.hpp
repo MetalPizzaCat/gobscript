@@ -14,5 +14,4 @@ struct StandardFunctionInfo
 static const std::map<std::string, StandardFunctionInfo> StandardFunctionIds = {
     {"print", StandardFunctionInfo{.argumentCount = (size_t)-1, .functionId = 0}},
     {"len", StandardFunctionInfo{.argumentCount = 1, .functionId = 1}},
-    {"file_suffix", StandardFunctionInfo{.argumentCount = 1, .functionId = 2}}
-};
+    {"filter", StandardFunctionInfo{.argumentCount = 2, .functionId = 2}}};

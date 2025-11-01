@@ -2,7 +2,7 @@
 
 ArrayNode::ArrayNode(std::vector<Value> const &values) : m_values(values) {}
 
-std::optional<Value> ArrayNode::getValuesAt(size_t i) const
+std::optional<Value> ArrayNode::getValueAt(size_t i) const
 {
     if (i < m_values.size())
     {

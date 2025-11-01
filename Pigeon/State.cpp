@@ -1,5 +1,6 @@
 #include "State.hpp"
 #include "Action.hpp"
+#include <algorithm>
 StringNode *State::createString(std::string const &base)
 {
     StringNode *node = new StringNode(base);
@@ -36,8 +37,10 @@ std::optional<Value> State::setVariableValue(std::string const &name, Value val)
             return val;
         }
     }
-    throwError("Can not assign to variable with name " + name + " because no such variable exists");
-    return {};
+    // if doesn't exist, create
+    // could consider making this a build flag, but currently this is to make the shell work nicer
+    m_variables.back()[name] = val;
+    return val;
 }
 
 bool State::doesVariableExist(std::string const &name)
@@ -67,6 +70,18 @@ bool State::doesVariableExistAndOfType(std::string const &name, ValueType type)
 void State::pushVariableScope(std::map<std::string, Value> variables)
 {
     m_variables.push_back(variables);
+    for (std::pair<const std::string, Value> &v : variables)
+    {
+        switch (v.second.index())
+        {
+        case ValueType::String:
+            std::get<StringNode *>(v.second)->increaseRefCount();
+            break;
+        case ValueType::Array:
+            std::get<ArrayNode *>(v.second)->increaseRefCount();
+            break;
+        }
+    }
 }
 
 void State::popVariableScope()
@@ -92,14 +107,15 @@ void State::popVariableScope()
 
 void State::addFunction(std::string const &name, std::vector<std::string> arguments, Action const *body)
 {
-    m_functions.emplace(name, Function(body, arguments));
+    m_functionNames.push_back(name);
+    m_functions.push_back(Function(body, arguments));
 }
 
 std::optional<Function> State::getFunction(std::string const &name) const
 {
-    if (m_functions.count(name) > 0)
+    if (std::vector<std::string>::const_iterator it = std::find(m_functionNames.begin(), m_functionNames.end(), name); it != m_functionNames.end())
     {
-        return m_functions.at(name);
+        return m_functions[it - m_functionNames.begin()];
     }
     return {};
 }
@@ -109,6 +125,33 @@ std::optional<State::NativeFunction> State::getStandardFunction(size_t i) const
     if (i < m_standardFunctions.size())
     {
         return m_standardFunctions[i];
+    }
+    return {};
+}
+
+std::optional<Function> State::getUserFunctionById(size_t i) const
+{
+    if (i < m_functions.size())
+    {
+        return m_functions[i];
+    }
+    return {};
+}
+
+std::optional<std::string> State::getUserFunctionNameById(size_t i) const
+{
+    if (i < m_functionNames.size())
+    {
+        return m_functionNames[i];
+    }
+    return {};
+}
+
+std::optional<size_t> State::getUserFunctionIdByName(std::string const &name) const
+{
+    if (std::vector<std::string>::const_iterator it = std::find(m_functionNames.begin(), m_functionNames.end(), name); it != m_functionNames.end())
+    {
+        return it - m_functionNames.begin();
     }
     return {};
 }

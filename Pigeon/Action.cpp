@@ -9,19 +9,19 @@ Value BinaryOperationAction::execute(State &state) const
     {
     case Operator::Equals:
     {
-        return areValuesTheSame(a, b);
+        return (int64_t)areValuesTheSame(a, b);
     }
     case Operator::NotEquals:
     {
-        return !areValuesTheSame(a, b);
+        return (int64_t)(!areValuesTheSame(a, b));
     }
     case Operator::EqualsStrict:
     {
-        return areValuesEqual(a, b);
+        return (int64_t)areValuesEqual(a, b);
     }
     case Operator::NotEqualsStrict:
     {
-        return !areValuesEqual(a, b);
+        return (int64_t)!(areValuesEqual(a, b));
     }
     }
 
@@ -34,19 +34,19 @@ Value BinaryOperationAction::execute(State &state) const
 
     case Operator::Less:
     {
-        return Value(std::get<int64_t>(a) < std::get<int64_t>(b));
+        return Value((int64_t)(std::get<int64_t>(a) < std::get<int64_t>(b)));
     }
     case Operator::More:
     {
-        return Value(std::get<int64_t>(a) > std::get<int64_t>(b));
+        return Value((int64_t)(std::get<int64_t>(a) > std::get<int64_t>(b)));
     }
     case Operator::LessEq:
     {
-        return Value(std::get<int64_t>(a) <= std::get<int64_t>(b));
+        return Value((int64_t)(std::get<int64_t>(a) <= std::get<int64_t>(b)));
     }
     case Operator::MoreEq:
     {
-        return Value(std::get<int64_t>(a) >= std::get<int64_t>(b));
+        return Value((int64_t)(std::get<int64_t>(a) >= std::get<int64_t>(b)));
     }
     case Operator::Add:
     {
@@ -71,11 +71,11 @@ Value BinaryOperationAction::execute(State &state) const
     }
     case Operator::And:
     {
-        return Value(std::get<int64_t>(a) && std::get<int64_t>(b));
+        return Value((int64_t)(std::get<int64_t>(a) && std::get<int64_t>(b)));
     }
     case Operator::Or:
     {
-        return Value(std::get<int64_t>(a) || std::get<int64_t>(b));
+        return Value((int64_t)(std::get<int64_t>(a) || std::get<int64_t>(b)));
     }
     case Operator::Not:
     {
@@ -286,14 +286,19 @@ Value FunctionDeclarationAction::execute(State &state) const
 
 Value FunctionCallAction::execute(State &state) const
 {
-    std::optional<Function> f = state.getFunction(m_name);
+    Value funcId = m_functionAccess->execute(state);
+    if (funcId.index() != ValueType::FunctionRef)
+    {
+        throwError("Expected function reference");
+    }
+    std::optional<Function> f = state.getUserFunctionById(getValueAsFunction(funcId).id);
     if (!f.has_value())
     {
-        throwError("No function named '" + m_name + "' found");
+        throwError("Referenced function not found");
     }
     if (f.value().arguments.size() != getArgumentCount())
     {
-        throwError("Function '" + m_name + "' expected " + std::to_string(f.value().arguments.size()) + " arguments, but got " + std::to_string(getArgumentCount()));
+        throwError("Function '" + state.getUserFunctionNameById(getValueAsFunction(funcId).id).value() + "' expected " + std::to_string(f.value().arguments.size()) + " arguments, but got " + std::to_string(getArgumentCount()));
     }
     std::map<std::string, Value> variables;
     for (size_t i = 0; i < getArgumentCount(); i++)
@@ -333,10 +338,44 @@ Value SystemFunctionCallFunction::execute(State &state) const
         std::vector<Value> args;
         for (size_t i = 0; i < getArgumentCount(); i++)
         {
-            args.push_back(getArgument(i)->execute(state));
+            Value var = getArgument(i)->execute(state);
+            // this is made to align with how local functions are called and 
+            // to prevent garbage collector from destroying objects during internal function calls withing c++ function
+            if (var.index() == ValueType::Array)
+            {
+                std::get<ArrayNode *>(var)->increaseRefCount();
+            }
+            else if (var.index() == ValueType::String)
+            {
+                std::get<StringNode *>(var)->increaseRefCount();
+            }
+            args.push_back(var);
         }
-        return f.value()(args);
+
+        Value res = f.value()(state, args);
+
+        for (Value &var : args)
+        {
+            if (var.index() == ValueType::Array)
+            {
+                std::get<ArrayNode *>(var)->decreaseRefCount();
+            }
+            else if (var.index() == ValueType::String)
+            {
+                std::get<StringNode *>(var)->decreaseRefCount();
+            }
+        }
+        return res;
     }
     throwError("Invalid standard library function referenced");
     return Value();
+}
+
+Value FunctionAccessAction::execute(State &state) const
+{
+    if (std::optional<size_t> funcId = state.getUserFunctionIdByName(m_name); funcId.has_value())
+    {
+        return Value(FunctionReference{.id = (uint32_t)funcId.value(), .native = false});
+    }
+    return {};
 }
