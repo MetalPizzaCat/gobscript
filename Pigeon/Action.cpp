@@ -1,6 +1,34 @@
 #include "Action.hpp"
 #include "State.hpp"
 #include "Function.hpp"
+
+#include "StandardFunctions.hpp"
+
+Value callNativeFunction(State &state, size_t funcId, std::vector<std::unique_ptr<Action>> const &arguments)
+{
+    if (std::optional<State::NativeFunction> f = state.getStandardFunction(funcId); f.has_value())
+    {
+        std::vector<Value> argValues;
+        for (size_t i = 0; i < arguments.size(); i++)
+        {
+            Value var = arguments.at(i)->execute(state);
+            // this is made to align with how local functions are called and
+            // to prevent garbage collector from destroying objects during internal function calls withing c++ function
+            increaseValueRefCount(var);
+            argValues.push_back(var);
+        }
+
+        Value res = f.value()(state, argValues);
+
+        for (Value &var : argValues)
+        {
+            decreaseValueRefCount(var);
+        }
+        return res;
+    }
+    throwError("Invalid standard library function referenced");
+    return Value();
+}
 Value BinaryOperationAction::execute(State &state) const
 {
     Value a = getArgument(0)->execute(state);
@@ -291,6 +319,10 @@ Value FunctionCallAction::execute(State &state) const
     {
         throwError("Expected function reference");
     }
+    if (getValueAsFunction(funcId).native)
+    {
+        return callNativeFunction(state, getValueAsFunction(funcId).id, getArguments());
+    }
     std::optional<Function> f = state.getUserFunctionById(getValueAsFunction(funcId).id);
     if (!f.has_value())
     {
@@ -333,42 +365,7 @@ Value WhileLoopAction::execute(State &state) const
 
 Value SystemFunctionCallFunction::execute(State &state) const
 {
-    if (std::optional<State::NativeFunction> f = state.getStandardFunction(m_funcId); f.has_value())
-    {
-        std::vector<Value> args;
-        for (size_t i = 0; i < getArgumentCount(); i++)
-        {
-            Value var = getArgument(i)->execute(state);
-            // this is made to align with how local functions are called and 
-            // to prevent garbage collector from destroying objects during internal function calls withing c++ function
-            if (var.index() == ValueType::Array)
-            {
-                std::get<ArrayNode *>(var)->increaseRefCount();
-            }
-            else if (var.index() == ValueType::String)
-            {
-                std::get<StringNode *>(var)->increaseRefCount();
-            }
-            args.push_back(var);
-        }
-
-        Value res = f.value()(state, args);
-
-        for (Value &var : args)
-        {
-            if (var.index() == ValueType::Array)
-            {
-                std::get<ArrayNode *>(var)->decreaseRefCount();
-            }
-            else if (var.index() == ValueType::String)
-            {
-                std::get<StringNode *>(var)->decreaseRefCount();
-            }
-        }
-        return res;
-    }
-    throwError("Invalid standard library function referenced");
-    return Value();
+    return callNativeFunction(state, m_funcId, getArguments());
 }
 
 Value FunctionAccessAction::execute(State &state) const
@@ -376,6 +373,13 @@ Value FunctionAccessAction::execute(State &state) const
     if (std::optional<size_t> funcId = state.getUserFunctionIdByName(m_name); funcId.has_value())
     {
         return Value(FunctionReference{.id = (uint32_t)funcId.value(), .native = false});
+    }
+    for (std::pair<const std::string, StandardFunctionInfo> nativeFuncs : StandardFunctionIds)
+    {
+        if (m_name == nativeFuncs.first)
+        {
+            return Value(FunctionReference{.id = (uint32_t)nativeFuncs.second.functionId, .native = true});
+        }
     }
     return {};
 }

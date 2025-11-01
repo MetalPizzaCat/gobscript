@@ -34,6 +34,14 @@ std::string convertValueToString(Value const &val);
 
 bool isValueNull(Value const &val);
 
+/// @brief Increase reference count of the value if possible. If value is not a type with reference counting nothing will happen. Simply a helper function
+/// @param val
+void increaseValueRefCount(Value const &val);
+
+/// @brief Decrease reference count of the value if possible. If value is not a type with reference counting nothing will happen. Simply a helper function
+/// @param val
+void decreaseValueRefCount(Value const &val);
+
 /**
  * @brief  Check if two values can be considered same. This is similar to non strict comparison in javascript, except different
  *

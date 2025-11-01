@@ -31,6 +31,32 @@ bool isValueNull(Value const &val)
     }
 }
 
+void increaseValueRefCount(Value const &val)
+{
+    switch (val.index())
+    {
+    case ValueType::String:
+        std::get<StringNode *>(val)->increaseRefCount();
+        break;
+    case ValueType::Array:
+        std::get<ArrayNode *>(val)->increaseRefCount();
+        break;
+    }
+}
+
+void decreaseValueRefCount(Value const &val)
+{
+    switch (val.index())
+    {
+    case ValueType::String:
+        std::get<StringNode *>(val)->decreaseRefCount();
+        break;
+    case ValueType::Array:
+        std::get<ArrayNode *>(val)->decreaseRefCount();
+        break;
+    }
+}
+
 bool areValuesTheSame(Value const &a, Value const &b)
 {
     if (isValueNull(a) && isValueNull(b))
@@ -48,7 +74,7 @@ bool areValuesTheSame(Value const &a, Value const &b)
     }
     else if (a.index() == ValueType::Array && b.index() == ValueType::Array)
     {
-        
+
         return std::get<ArrayNode *>(a)->equalTo(std::get<ArrayNode *>(b));
     }
 
