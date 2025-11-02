@@ -2,6 +2,31 @@
 #include <limits>
 #include <algorithm>
 #include "Function.hpp"
+
+std::optional<SpecialCharacter> tryParseSpecialCharacter(std::string::const_iterator &start, std::string::const_iterator end)
+{
+    // if we can't even advance far enough we don''t bother checking
+    if (start + 1 == end)
+    {
+        return {};
+    }
+    std::vector<SpecialCharacter>::const_iterator charIt = std::find_if(
+        SpecialCharacters.begin(),
+        SpecialCharacters.end(),
+        [start](SpecialCharacter const &ch)
+        {
+            for (size_t i = 0; i < strnlen(ch.sequence, 2); i++)
+            {
+                if (*(start + i) != ch.sequence[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        });
+    return charIt == SpecialCharacters.end() ? std::optional<SpecialCharacter>{} : *charIt;
+}
+
 void consumeCharacter(char character, std::string::const_iterator &start, std::string::const_iterator end, std::string const &errorMessage)
 {
     if (start == end || *start != character)
@@ -50,9 +75,17 @@ std::unique_ptr<GetConstStringAction> parseConstString(std::string::const_iterat
         it++;
     }
     bool hitClosingMark = false;
-    for (; it != end && *it != ' ' && *it != '(' && *it != ')' && !(expectedClosingMark && *it == '"'); it++)
+    for (; it != end && expectedClosingMark ? *it != '"' : (*it != ' ' && *it != '(' && *it != ')'); it++)
     {
-        result += *it;
+        if (std::optional<SpecialCharacter> spec = tryParseSpecialCharacter(it, end); spec.has_value())
+        {
+            result += spec.value().character;
+            it++;
+        }
+        else
+        {
+            result += *it;
+        }
     }
     if (expectedClosingMark)
     {
@@ -378,6 +411,7 @@ std::vector<std::unique_ptr<Action>> parseArguments(std::string::const_iterator 
     while (start != end && *start != ')')
     {
         actions.push_back(parseFunction(start, end));
+        skipWhitespace(start, end);
     }
     return actions;
 }
@@ -521,7 +555,7 @@ std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_itera
     }
     consumeCharacter(')', start, end, "Expected ')'");
 
-    std::unique_ptr<Action> act = parseSequence(start, end);
+    std::unique_ptr<Action> act = parseFunction(start, end);
     if (act == nullptr)
     {
         throwParsingError(start, "Expected body");

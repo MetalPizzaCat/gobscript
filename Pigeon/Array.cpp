@@ -1,6 +1,12 @@
 #include "Array.hpp"
 
-ArrayNode::ArrayNode(std::vector<Value> const &values) : m_values(values) {}
+ArrayNode::ArrayNode(std::vector<Value> const &values) : m_values(values)
+{
+    for (Value const &v : m_values)
+    {
+        increaseValueRefCount(v);
+    }
+}
 
 std::optional<Value> ArrayNode::getValueAt(size_t i) const
 {
@@ -47,6 +53,15 @@ bool ArrayNode::equalTo(ArrayNode const *other)
         }
     }
     return true;
+}
+
+void ArrayNode::pushBack(Value const &val)
+{
+    if (val.index() != ValueType::Array || getValueAsArray(val) != this)
+    {
+        increaseValueRefCount(val);
+    }
+    m_values.push_back(val);
 }
 
 ArrayNode::~ArrayNode()

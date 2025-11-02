@@ -50,6 +50,8 @@ public:
 
     std::string &getValue() { return m_value; }
 
+    virtual ~StringNode() {}
+
 private:
     std::string m_value;
 };

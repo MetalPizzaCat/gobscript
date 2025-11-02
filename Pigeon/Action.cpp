@@ -31,6 +31,17 @@ Value callNativeFunction(State &state, size_t funcId, std::vector<std::unique_pt
 }
 Value BinaryOperationAction::execute(State &state) const
 {
+    switch (m_op)
+    {
+    case Operator::And:
+    {
+        return Value((int64_t)(std::get<int64_t>(getArgument(0)->execute(state)) && std::get<int64_t>(getArgument(1)->execute(state))));
+    }
+    case Operator::Or:
+    {
+        return Value((int64_t)(std::get<int64_t>(getArgument(0)->execute(state)) || std::get<int64_t>(getArgument(1)->execute(state))));
+    }
+    }
     Value a = getArgument(0)->execute(state);
     Value b = getArgument(1)->execute(state);
     switch (m_op)
@@ -53,6 +64,10 @@ Value BinaryOperationAction::execute(State &state) const
     }
     }
 
+    if (a.index() == ValueType::String && b.index() == ValueType::String && m_op == Operator::Add)
+    {
+        return state.createString(getValueAsString(a)->getValue() + getValueAsString(b)->getValue());
+    }
     if (a.index() != b.index() || a.index() != ValueType::Integer)
     {
         throwError("Expected both values to be integers");
@@ -78,6 +93,7 @@ Value BinaryOperationAction::execute(State &state) const
     }
     case Operator::Add:
     {
+
         return Value(std::get<int64_t>(a) + std::get<int64_t>(b));
     }
     case Operator::Sub:
@@ -96,14 +112,6 @@ Value BinaryOperationAction::execute(State &state) const
     case Operator::Modulo:
     {
         return Value(std::get<int64_t>(a) % std::get<int64_t>(b));
-    }
-    case Operator::And:
-    {
-        return Value((int64_t)(std::get<int64_t>(a) && std::get<int64_t>(b)));
-    }
-    case Operator::Or:
-    {
-        return Value((int64_t)(std::get<int64_t>(a) || std::get<int64_t>(b)));
     }
     case Operator::Not:
     {
@@ -336,10 +344,15 @@ Value FunctionCallAction::execute(State &state) const
     for (size_t i = 0; i < getArgumentCount(); i++)
     {
         variables[f.value().arguments[i]] = getArgument(i)->execute(state);
+        increaseValueRefCount(variables[f.value().arguments[i]]);
     }
     state.pushVariableScope(variables);
     Value result = f.value().body->execute(state);
     state.popVariableScope();
+    for (auto const &v : variables)
+    {
+        decreaseValueRefCount(v.second);
+    }
     return result;
 }
 

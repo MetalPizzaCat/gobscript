@@ -22,6 +22,8 @@ public:
 
     size_t getLen() const override  { return m_values.size(); }
 
+    void pushBack(Value const& val);
+
     virtual ~ArrayNode();
 
 private:

@@ -3,6 +3,7 @@
 #include "../Pigeon/Action.hpp"
 #include "../Pigeon/Error.hpp"
 #include "../Pigeon/Array.hpp"
+#include <filesystem>
 
 std::optional<GobScriptHelper::ScriptFunction> GobScriptHelper::getCallableFunction(State &state, size_t id, bool native)
 {
@@ -29,13 +30,19 @@ Value GobScriptHelper::callScriptFunction(State &state, ScriptFunction const &f,
                        " arguments, but got 1");
         }
         std::map<std::string, Value> values;
-        for (size_t i = 0; i < i < arguments.size(); i++)
+        for (size_t i = 0; i < arguments.size(); i++)
         {
             values[func.arguments[i]] = arguments[i];
+            increaseValueRefCount(values[func.arguments[i]]);
         }
         state.pushVariableScope(values);
         r = func.body->execute(state);
         state.popVariableScope();
+
+        for (auto const &v : values)
+        {
+            decreaseValueRefCount(v.second);
+        }
     }
     else
     {
@@ -84,8 +91,27 @@ Value GobScriptHelper::nativeGetFileNameSuffix(State &state, std::vector<Value> 
     {
         throwError("Expected string");
     }
-    throwError("IMPLEMENT !!!");
-    return Value();
+    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).extension());
+}
+
+Value GobScriptHelper::nativeGetFileName(State &state, std::vector<Value> const &args)
+{
+    Value v = args[0];
+    if (v.index() != ValueType::String)
+    {
+        throwError("Expected string");
+    }
+    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).filename());
+}
+
+Value GobScriptHelper::nativeGetFileNameStem(State &state, std::vector<Value> const &args)
+{
+    Value v = args[0];
+    if (v.index() != ValueType::String)
+    {
+        throwError("Expected string");
+    }
+    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).stem());
 }
 
 Value GobScriptHelper::nativeArrayFilter(State &state, std::vector<Value> const &args)
@@ -148,4 +174,97 @@ Value GobScriptHelper::nativeMapArray(State &state, std::vector<Value> const &ar
 Value GobScriptHelper::nativeTestDouble(State &state, std::vector<Value> const &args)
 {
     return Value(getValueAsInt(args[0]) * 2);
+}
+
+Value GobScriptHelper::nativeListDirectory(State &state, std::vector<Value> const &args)
+{
+    Value path = args[0];
+    if (path.index() != ValueType::String)
+    {
+        throwError("Expected folder path");
+    }
+    if (!std::filesystem::is_directory(getValueAsString(path)->getValue()))
+    {
+        return Value(0);
+    }
+    std::vector<Value> files;
+    for (const auto &entry : std::filesystem::directory_iterator(getValueAsString(path)->getValue()))
+    {
+        files.push_back(state.createString(entry.path()));
+    }
+    return state.createArray(files);
+}
+
+Value GobScriptHelper::nativeIsDirectory(State &state, std::vector<Value> const &args)
+{
+    Value path = args[0];
+    if (path.index() != ValueType::String)
+    {
+        throwError("Expected folder path");
+    }
+    return (int64_t)std::filesystem::is_directory(getValueAsString(path)->getValue());
+}
+
+Value GobScriptHelper::nativeIsFile(State &state, std::vector<Value> const &args)
+{
+    Value path = args[0];
+    if (path.index() != ValueType::String)
+    {
+        throwError("Expected folder path");
+    }
+    return (int64_t)std::filesystem::is_regular_file(getValueAsString(path)->getValue());
+}
+
+Value GobScriptHelper::nativeAppend(State &state, std::vector<Value> const &args)
+{
+    Value v = args[0];
+    Value v2 = args[1];
+    switch (v.index())
+    {
+    case ValueType::String:
+        if (v2.index() != ValueType::String)
+        {
+            throwError("Expected string to append");
+        }
+        getValueAsString(v)->getValue() += getValueAsString(v2)->getValue();
+        return v;
+        break;
+    case ValueType::Array:
+        getValueAsArray(v)->pushBack(v2);
+        return v;
+        break;
+    default:
+        throwError("Invalid argument type for append operation, expected array or string");
+    }
+    return Value();
+}
+
+Value GobScriptHelper::nativeAt(State &state, std::vector<Value> const &args)
+{
+    Value v = args[0];
+    Value i = args[1];
+    if (i.index() != ValueType::Integer)
+    {
+        throwError("Expected integer for the indexing operation");
+    }
+    switch (v.index())
+    {
+    case ValueType::String:
+
+        return state.createString(std::string{getValueAsString(v)->getValue()[getValueAsInt(i)]});
+        break;
+    case ValueType::Array:
+        if (std::optional<Value> item = getValueAsArray(v)->getValueAt(getValueAsInt(i)); item.has_value())
+        {
+            return item.value();
+        }
+        else
+        {
+            throwError("Array out of bounds access");
+        }
+        break;
+    default:
+        throwError("Invalid argument type for indexing operation, expected array or string");
+    }
+    return Value();
 }

@@ -16,4 +16,11 @@ static const std::map<std::string, StandardFunctionInfo> StandardFunctionIds = {
     {"len", StandardFunctionInfo{.argumentCount = 1, .functionId = 1}},
     {"filter", StandardFunctionInfo{.argumentCount = 2, .functionId = 2}},
     {"map", StandardFunctionInfo{.argumentCount = 2, .functionId = 3}},
-    {"double", StandardFunctionInfo{.argumentCount = 1, .functionId = 4}}};
+    {"listdir", StandardFunctionInfo{.argumentCount = 1, .functionId = 4}},
+    {"filename_suffix", StandardFunctionInfo{.argumentCount = 1, .functionId = 5}},
+    {"is_dir", StandardFunctionInfo{.argumentCount = 1, .functionId = 6}},
+    {"is_file", StandardFunctionInfo{.argumentCount = 1, .functionId = 7}},
+    {"append", StandardFunctionInfo{.argumentCount = 2, .functionId = 8}},
+    {"at", StandardFunctionInfo{.argumentCount = 2, .functionId = 9}},
+    {"filename", StandardFunctionInfo{.argumentCount = 1, .functionId = 10}},
+    {"filename_stem", StandardFunctionInfo{.argumentCount = 1, .functionId = 11}}};
