@@ -3,7 +3,25 @@
 #include "../Pigeon/Action.hpp"
 #include "../Pigeon/Error.hpp"
 #include "../Pigeon/Array.hpp"
+#include "../Pigeon/Parser.hpp"
 #include <filesystem>
+#include <fstream>
+#include <sstream>
+
+std::unique_ptr<Action> GobScriptHelper::loadString(std::string const &code)
+{
+    std::string::const_iterator start = code.begin();
+    std::vector<std::unique_ptr<Action>> acts = Pigeon::Parser::parseTopLevelDeclarations(start, code.end());
+
+    return std::make_unique<SequenceAction>(std::move(acts));
+}
+
+std::unique_ptr<Action> GobScriptHelper::loadFile(std::string const &filepath)
+{
+    std::ifstream codeFile(filepath);
+
+    return loadString(std::string{std::istreambuf_iterator<char>(codeFile), std::istreambuf_iterator<char>()});
+}
 
 std::optional<GobScriptHelper::ScriptFunction> GobScriptHelper::getCallableFunction(State &state, size_t id, bool native)
 {
