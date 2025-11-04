@@ -159,9 +159,22 @@ namespace Pigeon::Parser
         start += offset;
         return std::make_unique<GetConstNumberAction>(numVal);
     }
-    std::optional<Operator> parseOperationType(std::string::const_iterator &start, std::string::const_iterator const &end)
+    std::optional<Operator> parseBinaryOperationType(std::string::const_iterator &start, std::string::const_iterator const &end)
     {
         for (std::pair<const std::string, Operator> const &pair : Operators)
+        {
+            if (expectString(pair.first, start, end))
+            {
+                start += pair.first.size();
+                return pair.second;
+            }
+        }
+        return {};
+    }
+
+    std::optional<Operator> parseUnaryOperationType(std::string::const_iterator &start, std::string::const_iterator const &end)
+    {
+        for (std::pair<const std::string, Operator> const &pair : UnaryOperators)
         {
             if (expectString(pair.first, start, end))
             {
@@ -311,9 +324,16 @@ namespace Pigeon::Parser
             return func;
         }
         // check if any preexisting action
-        else if (std::optional<Operator> op = parseOperationType(it, end); op.has_value())
+        else if (std::optional<Operator> op = parseBinaryOperationType(it, end); op.has_value())
         {
             std::unique_ptr<BinaryOperationAction> binOp = parseBinaryOperation(op.value(), it, end);
+            start = it;
+            // call the op parser
+            return binOp;
+        }
+        else if (std::optional<Operator> op = parseUnaryOperationType(it, end); op.has_value())
+        {
+            std::unique_ptr<UnaryOperationAction> binOp = parseUnaryOperation(op.value(), it, end);
             start = it;
             // call the op parser
             return binOp;
@@ -454,6 +474,18 @@ namespace Pigeon::Parser
         }
         skipNotCode(start, end);
         return std::make_unique<BinaryOperationAction>(op, std::move(args));
+    }
+
+    std::unique_ptr<UnaryOperationAction> parseUnaryOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end)
+    {
+        std::vector<std::unique_ptr<Action>> args = parseArguments(start, end);
+        if (args.size() != 1)
+        {
+            throwParsingError(start, "Operator expected only one argument");
+            return nullptr;
+        }
+        skipNotCode(start, end);
+        return std::make_unique<UnaryOperationAction>(op, std::move(args));
     }
 
     std::unique_ptr<AssignOperationAction> parseBinaryAssignmentOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end)
@@ -677,6 +709,5 @@ namespace Pigeon::Parser
         }
         return std::make_unique<SystemFunctionCallFunction>(info.value().functionId, std::move(args));
     }
-
 
 }

@@ -17,6 +17,7 @@ enum class Operator
     Sub,
     Mul,
     Div,
+    Negate,
     AddAssign,
     SubAssign,
     MulAssign,
@@ -45,8 +46,6 @@ static const std::unordered_map<std::string, Operator> Operators = {
     {"==", Operator::Equals},
     {"!==", Operator::NotEqualsStrict},
     {"!=", Operator::NotEquals},
-    {"!", Operator::Not},
-    {"not", Operator::Not},
     {">=", Operator::MoreEq},
     {"<=", Operator::LessEq},
     {">>", Operator::BitRightShift},
@@ -61,6 +60,13 @@ static const std::unordered_map<std::string, Operator> Operators = {
     {"and", Operator::And},
     {"or", Operator::Or},
     {"%", Operator::Modulo},
+};
+
+static const std::unordered_map<std::string, Operator> UnaryOperators = {
+    {"!", Operator::Not},
+    {"not", Operator::Not},
+    {"neg", Operator::Negate},
+    {"~", Operator::BitNot},
 };
 
 static const std::unordered_map<std::string, Operator> AssignOperators = {

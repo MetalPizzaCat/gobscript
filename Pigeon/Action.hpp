@@ -57,6 +57,18 @@ private:
     Operator m_op;
 };
 
+class UnaryOperationAction : public Action
+{
+public:
+    explicit UnaryOperationAction(Operator op, std::vector<std::unique_ptr<Action>> args) : m_op(op), Action(std::move(args))
+    {
+    }
+    Value execute(State &state) const;
+
+private:
+    Operator m_op;
+};
+
 class AssignOperationAction : public Action
 {
 public:

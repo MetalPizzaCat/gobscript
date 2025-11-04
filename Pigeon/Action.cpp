@@ -396,3 +396,24 @@ Value FunctionAccessAction::execute(State &state) const
     }
     return {};
 }
+
+Value UnaryOperationAction::execute(State &state) const
+{
+    Value v = getArgument(0)->execute(state);
+    if (v.index() != ValueType::Integer)
+    {
+        throwError("Expected integer type for unary operation");
+    }
+    switch (m_op)
+    {
+    case Operator::Not:
+        return !getValueAsInt(v);
+    case Operator::Negate:
+        return -getValueAsInt(v);
+    case Operator::BitNot:
+        return ~getValueAsInt(v);
+    default:
+        throwError("Unknown unary operation");
+    }
+    return Value();
+}

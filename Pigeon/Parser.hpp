@@ -57,7 +57,13 @@ namespace Pigeon::Parser
     /// @param start
     /// @param end
     /// @return
-    std::optional<Operator> parseOperationType(std::string::const_iterator &start, std::string::const_iterator const &end);
+    std::optional<Operator> parseBinaryOperationType(std::string::const_iterator &start, std::string::const_iterator const &end);
+
+    /// @brief Try to parse a string containing type of the operator, excluding assignment operators
+    /// @param start
+    /// @param end
+    /// @return
+    std::optional<Operator> parseUnaryOperationType(std::string::const_iterator &start, std::string::const_iterator const &end);
 
     /// @brief  Try to parse a string containing type of the operator, excluding non-assignment operators
     /// @param start
@@ -134,6 +140,13 @@ namespace Pigeon::Parser
     /// @return
     std::unique_ptr<BinaryOperationAction> parseBinaryOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end);
 
+    /// @brief Parse unary operation that doesn't modify the environment. Always expects one argument
+    /// @param op
+    /// @param start
+    /// @param end
+    /// @return
+    std::unique_ptr<UnaryOperationAction> parseUnaryOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end);
+
     /// @brief Parse binary operation that modifies the value of a given variable. The first argument is always a variable name
     /// @param op
     /// @param start
@@ -175,6 +188,5 @@ namespace Pigeon::Parser
     /// @param end
     /// @return Action that calls a system function from the state of nullptr if no action is found by name
     std::unique_ptr<SystemFunctionCallFunction> parseSystemFunction(std::string::const_iterator &start, std::string::const_iterator const &end);
-
 
 }
