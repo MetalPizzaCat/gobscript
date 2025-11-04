@@ -13,7 +13,7 @@ std::unique_ptr<Action> GobScriptHelper::loadString(std::string const &code)
     std::string::const_iterator start = code.begin();
     std::vector<std::unique_ptr<Action>> acts = Pigeon::Parser::parseTopLevelDeclarations(start, code.end());
 
-    return std::make_unique<SequenceAction>(std::move(acts));
+    return std::make_unique<SequenceAction>(start, std::move(acts));
 }
 
 std::unique_ptr<Action> GobScriptHelper::loadFile(std::string const &filepath)
@@ -43,9 +43,10 @@ Value GobScriptHelper::callScriptFunction(State &state, ScriptFunction const &f,
         Function func = std::get<Function>(f);
         if (arguments.size() != func.arguments.size())
         {
-            throwError("Function expected " +
-                       std::to_string(func.arguments.size()) +
-                       " arguments, but got 1");
+            throw RuntimeActionExecutionError("Function expected " +
+                                              std::to_string(func.arguments.size()) +
+                                              " arguments, but got 1");
+            
         }
         std::map<std::string, Value> values;
         for (size_t i = 0; i < arguments.size(); i++)
@@ -107,7 +108,7 @@ Value GobScriptHelper::nativeGetFileNameSuffix(State &state, std::vector<Value> 
     Value v = args[0];
     if (v.index() != ValueType::String)
     {
-        throwError("Expected string");
+          throw RuntimeActionExecutionError("Expected string");
     }
     return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).extension());
 }
@@ -117,7 +118,7 @@ Value GobScriptHelper::nativeGetFileName(State &state, std::vector<Value> const 
     Value v = args[0];
     if (v.index() != ValueType::String)
     {
-        throwError("Expected string");
+          throw RuntimeActionExecutionError("Expected string");
     }
     return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).filename());
 }
@@ -127,7 +128,7 @@ Value GobScriptHelper::nativeGetFileNameStem(State &state, std::vector<Value> co
     Value v = args[0];
     if (v.index() != ValueType::String)
     {
-        throwError("Expected string");
+          throw RuntimeActionExecutionError("Expected string");
     }
     return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).stem());
 }
@@ -138,17 +139,17 @@ Value GobScriptHelper::nativeArrayFilter(State &state, std::vector<Value> const 
     Value callback = args[1];
     if (array.index() != ValueType::Array)
     {
-        throwError("Expected array");
+          throw RuntimeActionExecutionError("Expected array");
     }
     if (callback.index() != ValueType::FunctionRef)
     {
-        throwError("Expected callback filter function");
+          throw RuntimeActionExecutionError("Expected callback filter function");
     }
     ArrayNode const *arr = getValueAsArray(array);
     std::optional<ScriptFunction> func = getCallableFunction(state, getValueAsFunction(callback).id, getValueAsFunction(callback).native);
     if (!func.has_value())
     {
-        throwError("Referenced function not found");
+          throw RuntimeActionExecutionError("Referenced function not found");
     }
     std::vector<Value> val;
     for (size_t i = 0; i < arr->getLen(); i++)
@@ -168,17 +169,17 @@ Value GobScriptHelper::nativeMapArray(State &state, std::vector<Value> const &ar
     Value callback = args[1];
     if (array.index() != ValueType::Array)
     {
-        throwError("Expected array");
+          throw RuntimeActionExecutionError("Expected array");
     }
     if (callback.index() != ValueType::FunctionRef)
     {
-        throwError("Expected callback filter function");
+          throw RuntimeActionExecutionError("Expected callback filter function");
     }
     ArrayNode const *arr = getValueAsArray(array);
     std::optional<ScriptFunction> func = getCallableFunction(state, getValueAsFunction(callback).id, getValueAsFunction(callback).native);
     if (!func.has_value())
     {
-        throwError("Referenced function not found");
+          throw RuntimeActionExecutionError("Referenced function not found");
     }
 
     std::vector<Value> val;
@@ -199,7 +200,7 @@ Value GobScriptHelper::nativeListDirectory(State &state, std::vector<Value> cons
     Value path = args[0];
     if (path.index() != ValueType::String)
     {
-        throwError("Expected folder path");
+          throw RuntimeActionExecutionError("Expected folder path");
     }
     if (!std::filesystem::is_directory(getValueAsString(path)->getValue()))
     {
@@ -218,7 +219,7 @@ Value GobScriptHelper::nativeIsDirectory(State &state, std::vector<Value> const 
     Value path = args[0];
     if (path.index() != ValueType::String)
     {
-        throwError("Expected folder path");
+          throw RuntimeActionExecutionError("Expected folder path");
     }
     return (int64_t)std::filesystem::is_directory(getValueAsString(path)->getValue());
 }
@@ -228,7 +229,7 @@ Value GobScriptHelper::nativeIsFile(State &state, std::vector<Value> const &args
     Value path = args[0];
     if (path.index() != ValueType::String)
     {
-        throwError("Expected folder path");
+          throw RuntimeActionExecutionError("Expected folder path");
     }
     return (int64_t)std::filesystem::is_regular_file(getValueAsString(path)->getValue());
 }
@@ -242,7 +243,7 @@ Value GobScriptHelper::nativeAppend(State &state, std::vector<Value> const &args
     case ValueType::String:
         if (v2.index() != ValueType::String)
         {
-            throwError("Expected string to append");
+              throw RuntimeActionExecutionError("Expected string to append");
         }
         getValueAsString(v)->getValue() += getValueAsString(v2)->getValue();
         return v;
@@ -252,7 +253,7 @@ Value GobScriptHelper::nativeAppend(State &state, std::vector<Value> const &args
         return v;
         break;
     default:
-        throwError("Invalid argument type for append operation, expected array or string");
+          throw RuntimeActionExecutionError("Invalid argument type for append operation, expected array or string");
     }
     return Value();
 }
@@ -263,7 +264,7 @@ Value GobScriptHelper::nativeAt(State &state, std::vector<Value> const &args)
     Value i = args[1];
     if (i.index() != ValueType::Integer)
     {
-        throwError("Expected integer for the indexing operation");
+          throw RuntimeActionExecutionError("Expected integer for the indexing operation");
     }
     switch (v.index())
     {
@@ -278,11 +279,11 @@ Value GobScriptHelper::nativeAt(State &state, std::vector<Value> const &args)
         }
         else
         {
-            throwError("Array out of bounds access");
+              throw RuntimeActionExecutionError("Array out of bounds access");
         }
         break;
     default:
-        throwError("Invalid argument type for indexing operation, expected array or string");
+          throw RuntimeActionExecutionError("Invalid argument type for indexing operation, expected array or string");
     }
     return Value();
 }

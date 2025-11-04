@@ -1,10 +1,8 @@
 #include "Error.hpp"
 
-void throwError(std::string const &errorMessage)
+void throwRuntimeError(std::string::const_iterator const &pos, std::string const &errorMessage)
 {
-    // TODO: REPLACE WITH PROPER ERROR HANDLING PLEASE
-    std::cerr << errorMessage << std::endl;
-    exit(EXIT_FAILURE);
+    throw RuntimeError(pos, errorMessage);
 }
 
 void throwParsingError(std::string::const_iterator const &pos, std::string const &errorMessage)
@@ -18,5 +16,23 @@ const char *ParsingError::what() const throw()
 }
 
 ParsingError::ParsingError(std::string::const_iterator const &pos, std::string const &msg) : m_it(pos), m_message(msg)
+{
+}
+
+const char *RuntimeActionExecutionError::what() const throw()
+{
+    return m_message.c_str();
+}
+
+RuntimeActionExecutionError::RuntimeActionExecutionError(std::string const &msg) : m_message(msg)
+{
+}
+
+const char *RuntimeError::what() const throw()
+{
+    return m_message.c_str();
+}
+
+RuntimeError::RuntimeError(std::string::const_iterator const &pos, std::string const &msg) : m_it(pos), m_message(msg)
 {
 }

@@ -26,7 +26,7 @@ Value callNativeFunction(State &state, size_t funcId, std::vector<std::unique_pt
         }
         return res;
     }
-    throwError("Invalid standard library function referenced");
+    throw RuntimeActionExecutionError("Invalid standard library function referenced");
     return Value();
 }
 Value BinaryOperationAction::execute(State &state) const
@@ -70,7 +70,7 @@ Value BinaryOperationAction::execute(State &state) const
     }
     if (a.index() != b.index() || a.index() != ValueType::Integer)
     {
-        throwError("Expected both values to be integers");
+        throwRuntimeError(getCodePosition(), "Expected both values to be integers");
     }
     switch (m_op)
     {
@@ -205,7 +205,7 @@ Value VariableAccessAction::execute(State &state) const
     {
         return val.value();
     }
-    throwError("No variable with name " + m_name + " exists");
+    throwRuntimeError(getCodePosition(), "No variable with name " + m_name + " exists");
     return Value();
 }
 
@@ -287,7 +287,7 @@ Value BranchAction::execute(State &state) const
     Value cond = m_cond->execute(state);
     if (cond.index() != ValueType::Integer)
     {
-        throwError("Expected an integer");
+        throwRuntimeError(getCodePosition(), "Expected an integer");
     }
     if (std::get<int64_t>(cond))
     {
@@ -325,7 +325,7 @@ Value FunctionCallAction::execute(State &state) const
     Value funcId = m_functionAccess->execute(state);
     if (funcId.index() != ValueType::FunctionRef)
     {
-        throwError("Expected function reference");
+        throwRuntimeError(getCodePosition(), "Expected function reference");
     }
     if (getValueAsFunction(funcId).native)
     {
@@ -334,11 +334,11 @@ Value FunctionCallAction::execute(State &state) const
     std::optional<Function> f = state.getUserFunctionById(getValueAsFunction(funcId).id);
     if (!f.has_value())
     {
-        throwError("Referenced function not found");
+        throwRuntimeError(getCodePosition(), "Referenced function not found");
     }
     if (f.value().arguments.size() != getArgumentCount())
     {
-        throwError("Function '" + state.getUserFunctionNameById(getValueAsFunction(funcId).id).value() + "' expected " + std::to_string(f.value().arguments.size()) + " arguments, but got " + std::to_string(getArgumentCount()));
+        throwRuntimeError(getCodePosition(), "Function '" + state.getUserFunctionNameById(getValueAsFunction(funcId).id).value() + "' expected " + std::to_string(f.value().arguments.size()) + " arguments, but got " + std::to_string(getArgumentCount()));
     }
     std::map<std::string, Value> variables;
     for (size_t i = 0; i < getArgumentCount(); i++)
@@ -378,7 +378,15 @@ Value WhileLoopAction::execute(State &state) const
 
 Value SystemFunctionCallFunction::execute(State &state) const
 {
-    return callNativeFunction(state, m_funcId, getArguments());
+    try
+    {
+        return callNativeFunction(state, m_funcId, getArguments());
+    }
+    catch (RuntimeActionExecutionError e)
+    {
+        throwRuntimeError(getCodePosition(), e.what());
+    }
+    return Value();
 }
 
 Value FunctionAccessAction::execute(State &state) const
@@ -402,7 +410,7 @@ Value UnaryOperationAction::execute(State &state) const
     Value v = getArgument(0)->execute(state);
     if (v.index() != ValueType::Integer)
     {
-        throwError("Expected integer type for unary operation");
+        throwRuntimeError(getCodePosition(), "Expected integer type for unary operation");
     }
     switch (m_op)
     {
@@ -413,7 +421,7 @@ Value UnaryOperationAction::execute(State &state) const
     case Operator::BitNot:
         return ~getValueAsInt(v);
     default:
-        throwError("Unknown unary operation");
+        throwRuntimeError(getCodePosition(), "Unknown unary operation");
     }
     return Value();
 }

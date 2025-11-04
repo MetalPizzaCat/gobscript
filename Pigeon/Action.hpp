@@ -16,8 +16,8 @@
 class Action
 {
 public:
-    explicit Action() = default;
-    explicit Action(std::vector<std::unique_ptr<Action>> args) : m_arguments(std::move(args)) {}
+    explicit Action(std::string::const_iterator const &it) : m_codePtr(it) {}
+    explicit Action(std::string::const_iterator const &it, std::vector<std::unique_ptr<Action>> args) : m_codePtr(it), m_arguments(std::move(args)) {}
     virtual Value execute(State &state) const = 0;
 
     void addArgument(std::unique_ptr<Action> action)
@@ -41,14 +41,22 @@ public:
         return m_arguments;
     }
 
+    /// @brief Get position in code from which this action was parsed
+    /// @return Iterator pointing to the position in code from which this action was parsed
+    std::string::const_iterator const &getCodePosition() const { return m_codePtr; }
+
 private:
     std::vector<std::unique_ptr<Action>> m_arguments;
+    std::string::const_iterator m_codePtr;
 };
 
 class BinaryOperationAction : public Action
 {
 public:
-    explicit BinaryOperationAction(Operator op, std::vector<std::unique_ptr<Action>> args) : m_op(op), Action(std::move(args))
+    explicit BinaryOperationAction(std::string::const_iterator const &it,
+                                   Operator op,
+                                   std::vector<std::unique_ptr<Action>> args) : m_op(op),
+                                                                                Action(it, std::move(args))
     {
     }
     Value execute(State &state) const;
@@ -60,7 +68,7 @@ private:
 class UnaryOperationAction : public Action
 {
 public:
-    explicit UnaryOperationAction(Operator op, std::vector<std::unique_ptr<Action>> args) : m_op(op), Action(std::move(args))
+    explicit UnaryOperationAction(std::string::const_iterator const &it, Operator op, std::vector<std::unique_ptr<Action>> args) : m_op(op), Action(it, std::move(args))
     {
     }
     Value execute(State &state) const;
@@ -72,11 +80,12 @@ private:
 class AssignOperationAction : public Action
 {
 public:
-    explicit AssignOperationAction(Operator op,
+    explicit AssignOperationAction(std::string::const_iterator const &it, Operator op,
                                    std::string const &variableName,
                                    std::unique_ptr<Action> value) : m_op(op),
                                                                     m_name(variableName),
-                                                                    m_value(std::move(value))
+                                                                    m_value(std::move(value)),
+                                                                    Action(it)
     {
     }
     Value execute(State &state) const;
@@ -89,7 +98,7 @@ private:
 class GetConstNumberAction : public Action
 {
 public:
-    explicit GetConstNumberAction(int64_t val) : m_value(val) {}
+    explicit GetConstNumberAction(std::string::const_iterator const &it, int64_t val) : m_value(val), Action(it) {}
     Value execute(State &state) const override { return Value((int64_t)m_value); }
 
 private:
@@ -99,7 +108,7 @@ private:
 class GetConstStringAction : public Action
 {
 public:
-    explicit GetConstStringAction(std::string const &val) : m_value(val) {}
+    explicit GetConstStringAction(std::string::const_iterator const &it, std::string const &val) : m_value(val), Action(it) {}
     Value execute(State &state) const override
     {
         return state.createString(m_value);
@@ -113,18 +122,19 @@ private:
 class SequenceAction : public Action
 {
 public:
-    explicit SequenceAction(std::vector<std::unique_ptr<Action>> actions) : Action(std::move(actions)) {}
+    explicit SequenceAction(std::string::const_iterator const &it, std::vector<std::unique_ptr<Action>> actions) : Action(it, std::move(actions)) {}
     Value execute(State &state) const override;
 };
 
 class BranchAction : public Action
 {
 public:
-    explicit BranchAction(std::unique_ptr<Action> cond,
+    explicit BranchAction(std::string::const_iterator const &it, std::unique_ptr<Action> cond,
                           std::unique_ptr<Action> thenBranch,
                           std::unique_ptr<Action> elseBranch) : m_cond(std::move(cond)),
                                                                 m_then(std::move(thenBranch)),
-                                                                m_else(std::move(elseBranch))
+                                                                m_else(std::move(elseBranch)),
+                                                                Action(it)
     {
     }
 
@@ -139,7 +149,7 @@ private:
 class VariableAccessAction : public Action
 {
 public:
-    explicit VariableAccessAction(std::string const &name) : m_name(name) {}
+    explicit VariableAccessAction(std::string::const_iterator const &it, std::string const &name) : m_name(name), Action(it) {}
     Value execute(State &state) const override;
 
 private:
@@ -149,7 +159,7 @@ private:
 class FunctionAccessAction : public Action
 {
 public:
-    explicit FunctionAccessAction(std::string const &name) : m_name(name) {}
+    explicit FunctionAccessAction(std::string::const_iterator const &it, std::string const &name) : m_name(name), Action(it) {}
     Value execute(State &state) const override;
 
 private:
@@ -159,10 +169,10 @@ private:
 class VariableBlockAction : public Action
 {
 public:
-    explicit VariableBlockAction(
-        std::map<std::string, std::unique_ptr<Action>> variables,
-        std::unique_ptr<Action> body) : m_body(std::move(body)),
-                                        m_variables(std::move(variables)) {}
+    explicit VariableBlockAction(std::string::const_iterator const &it,
+                                 std::map<std::string, std::unique_ptr<Action>> variables,
+                                 std::unique_ptr<Action> body) : m_body(std::move(body)),
+                                                                 m_variables(std::move(variables)), Action(it) {}
 
     Value execute(State &state) const override;
 
@@ -174,10 +184,13 @@ private:
 class CommandCallAction : public Action
 {
 public:
-    explicit CommandCallAction(std::unique_ptr<Action> commandName, std::vector<std::unique_ptr<Action>> arguments) : m_commandName(std::move(commandName)),
-                                                                                                                      m_arguments(std::move(arguments)) {}
+    explicit CommandCallAction(std::string::const_iterator const &it,
+                               std::unique_ptr<Action> commandName,
+                               std::vector<std::unique_ptr<Action>> arguments) : m_commandName(std::move(commandName)),
+                                                                                 m_arguments(std::move(arguments)),
+                                                                                 Action(it) {}
 
-    explicit CommandCallAction(std::unique_ptr<Action> commandName) : m_commandName(std::move(commandName)) {}
+    explicit CommandCallAction(std::string::const_iterator const &it, std::unique_ptr<Action> commandName) : m_commandName(std::move(commandName)), Action(it) {}
 
     Value execute(State &state) const override;
 
@@ -189,18 +202,19 @@ private:
 class CreateArrayAction : public Action
 {
 public:
-    explicit CreateArrayAction(std::vector<std::unique_ptr<Action>> items) : Action(std::move(items)) {}
+    explicit CreateArrayAction(std::string::const_iterator const &it, std::vector<std::unique_ptr<Action>> items) : Action(it, std::move(items)) {}
     Value execute(State &state) const override;
 };
 
 class FunctionDeclarationAction : public Action
 {
 public:
-    explicit FunctionDeclarationAction(std::string const &name,
+    explicit FunctionDeclarationAction(std::string::const_iterator const &it, std::string const &name,
                                        std::unique_ptr<Action> body,
                                        std::vector<std::string> const &arguments) : m_name(name),
                                                                                     m_arguments(arguments),
-                                                                                    m_body(std::move(body))
+                                                                                    m_body(std::move(body)),
+                                                                                    Action(it)
     {
     }
     Value execute(State &state) const override;
@@ -214,9 +228,9 @@ private:
 class FunctionCallAction : public Action
 {
 public:
-    explicit FunctionCallAction(std::unique_ptr<Action> functionAccess,
+    explicit FunctionCallAction(std::string::const_iterator const &it, std::unique_ptr<Action> functionAccess,
                                 std::vector<std::unique_ptr<Action>> arguments) : m_functionAccess(std::move(functionAccess)),
-                                                                                  Action(std::move(arguments))
+                                                                                  Action(it, std::move(arguments))
     {
     }
     Value execute(State &state) const override;
@@ -228,14 +242,15 @@ private:
 class ForLoopAction : public Action
 {
 public:
-    explicit ForLoopAction(
-        std::unique_ptr<Action> init,
-        std::unique_ptr<Action> cond,
-        std::unique_ptr<Action> iter,
-        std::unique_ptr<Action> body) : m_init(std::move(init)),
-                                        m_cond(std::move(cond)),
-                                        m_iter(std::move(iter)),
-                                        m_body(std::move(body)) {}
+    explicit ForLoopAction(std::string::const_iterator const &it,
+                           std::unique_ptr<Action> init,
+                           std::unique_ptr<Action> cond,
+                           std::unique_ptr<Action> iter,
+                           std::unique_ptr<Action> body) : m_init(std::move(init)),
+                                                           m_cond(std::move(cond)),
+                                                           m_iter(std::move(iter)),
+                                                           m_body(std::move(body)),
+                                                           Action(it) {}
     Value execute(State &state) const override;
 
 private:
@@ -248,10 +263,11 @@ private:
 class WhileLoopAction : public Action
 {
 public:
-    explicit WhileLoopAction(
-        std::unique_ptr<Action> cond,
-        std::unique_ptr<Action> body) : m_cond(std::move(cond)),
-                                        m_body(std::move(body)) {}
+    explicit WhileLoopAction(std::string::const_iterator const &it,
+                             std::unique_ptr<Action> cond,
+                             std::unique_ptr<Action> body) : m_cond(std::move(cond)),
+                                                             m_body(std::move(body)),
+                                                             Action(it) {}
     Value execute(State &state) const override;
 
 private:
@@ -263,7 +279,10 @@ private:
 class SystemFunctionCallFunction : public Action
 {
 public:
-    explicit SystemFunctionCallFunction(size_t funcId, std::vector<std::unique_ptr<Action>> args) : m_funcId(funcId), Action(std::move(args)) {}
+    explicit SystemFunctionCallFunction(std::string::const_iterator const &it,
+                                        size_t funcId,
+                                        std::vector<std::unique_ptr<Action>> args) : m_funcId(funcId),
+                                                                                     Action(it, std::move(args)) {}
     Value execute(State &state) const override;
 
 private:

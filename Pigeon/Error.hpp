@@ -15,9 +15,32 @@ private:
     std::string m_message;
 };
 
+class RuntimeActionExecutionError : public std::exception
+{
+public:
+    const char *what() const throw() override;
+    RuntimeActionExecutionError( std::string const &msg);
+
+private:
+    std::string m_message;
+};
+
+class RuntimeError : public std::exception
+{
+public:
+    const char *what() const throw() override;
+    RuntimeError(std::string::const_iterator const &pos, std::string const &msg);
+
+    std::string::const_iterator const &getIterator() const { return m_it; }
+
+private:
+    std::string::const_iterator m_it;
+    std::string m_message;
+};
+
 /// @brief Throw general purpose error with given message. Wrapper around whatever error handling system the project uses
 /// @param errorMessage Message to display
-void throwError(std::string const &errorMessage);
+void throwRuntimeError(std::string::const_iterator const &pos, std::string const &errorMessage);
 
 /// @brief Throw error describing position in the code string and error message.  Wrapper around whatever error handling system the project uses
 /// @param pos Position in the original code string

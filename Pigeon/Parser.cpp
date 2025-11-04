@@ -110,7 +110,7 @@ namespace Pigeon::Parser
             return nullptr;
         }
         start = it;
-        return std::make_unique<GetConstStringAction>(result);
+        return std::make_unique<GetConstStringAction>(start, result);
     }
     std::optional<std::string> parseVariableName(std::string::const_iterator &start, std::string::const_iterator const &end)
     {
@@ -157,7 +157,7 @@ namespace Pigeon::Parser
                                          std::to_string(std::numeric_limits<int32_t>::max()));
         }
         start += offset;
-        return std::make_unique<GetConstNumberAction>(numVal);
+        return std::make_unique<GetConstNumberAction>(start, numVal);
     }
     std::optional<Operator> parseBinaryOperationType(std::string::const_iterator &start, std::string::const_iterator const &end)
     {
@@ -240,7 +240,7 @@ namespace Pigeon::Parser
         skipNotCode(it, end);
         consumeCharacter(')', it, end, "Expected ')'");
         start = it;
-        return std::make_unique<FunctionDeclarationAction>(name.value(), std::move(body), argumentNames);
+        return std::make_unique<FunctionDeclarationAction>(start, name.value(), std::move(body), argumentNames);
     }
 
     std::unique_ptr<FunctionCallAction> parseUserFunctionCall(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -252,7 +252,7 @@ namespace Pigeon::Parser
             throwParsingError(start, "Expected function name");
         }
         std::vector<std::unique_ptr<Action>> args = parseArguments(start, end);
-        std::unique_ptr<FunctionCallAction> exec = std::make_unique<FunctionCallAction>(std::move(functionAccess), std::move(args));
+        std::unique_ptr<FunctionCallAction> exec = std::make_unique<FunctionCallAction>(start, std::move(functionAccess), std::move(args));
         skipNotCode(start, end);
         return exec;
     }
@@ -386,7 +386,7 @@ namespace Pigeon::Parser
             if (*start == ')')
             {
                 start++;
-                return std::make_unique<GetConstNumberAction>(0);
+                return std::make_unique<GetConstNumberAction>(start, 0);
             }
             std::unique_ptr<Action> func = parseFunction(start, end);
             skipNotCode(start, end);
@@ -411,7 +411,7 @@ namespace Pigeon::Parser
         start++;
         if (std::optional<std::string> name = parseVariableName(start, end); name.has_value())
         {
-            return std::make_unique<VariableAccessAction>(name.value());
+            return std::make_unique<VariableAccessAction>(start, name.value());
         }
         throwParsingError(start, "Expected variable name");
         return nullptr;
@@ -426,7 +426,7 @@ namespace Pigeon::Parser
         start++;
         if (std::optional<std::string> name = parseVariableName(start, end); name.has_value())
         {
-            return std::make_unique<FunctionAccessAction>(name.value());
+            return std::make_unique<FunctionAccessAction>(start, name.value());
         }
         throwParsingError(start, "Expected function name");
         return nullptr;
@@ -447,7 +447,7 @@ namespace Pigeon::Parser
     {
         std::string::const_iterator it = start;
         std::vector<std::unique_ptr<Action>> args = parseArguments(it, end);
-        std::unique_ptr<CommandCallAction> exec = std::make_unique<CommandCallAction>(std::move(commandNameAction), std::move(args));
+        std::unique_ptr<CommandCallAction> exec = std::make_unique<CommandCallAction>(it, std::move(commandNameAction), std::move(args));
         skipNotCode(it, end);
         start = it;
         return exec;
@@ -473,7 +473,7 @@ namespace Pigeon::Parser
             return nullptr;
         }
         skipNotCode(start, end);
-        return std::make_unique<BinaryOperationAction>(op, std::move(args));
+        return std::make_unique<BinaryOperationAction>(start, op, std::move(args));
     }
 
     std::unique_ptr<UnaryOperationAction> parseUnaryOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end)
@@ -485,7 +485,7 @@ namespace Pigeon::Parser
             return nullptr;
         }
         skipNotCode(start, end);
-        return std::make_unique<UnaryOperationAction>(op, std::move(args));
+        return std::make_unique<UnaryOperationAction>(start, op, std::move(args));
     }
 
     std::unique_ptr<AssignOperationAction> parseBinaryAssignmentOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end)
@@ -503,7 +503,7 @@ namespace Pigeon::Parser
             throwParsingError(start, "Expected value");
         }
         skipNotCode(start, end);
-        return std::make_unique<AssignOperationAction>(op, name.value(), std::move(val));
+        return std::make_unique<AssignOperationAction>(start, op, name.value(), std::move(val));
     }
 
     std::unique_ptr<BranchAction> parseBranch(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -535,7 +535,7 @@ namespace Pigeon::Parser
             throwParsingError(start, "Expected else body");
         }
         skipNotCode(start, end);
-        return std::make_unique<BranchAction>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+        return std::make_unique<BranchAction>(start, std::move(condition), std::move(thenBranch), std::move(elseBranch));
     }
 
     std::unique_ptr<SequenceAction> parseSequence(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -556,7 +556,7 @@ namespace Pigeon::Parser
         {
             return nullptr;
         }
-        return std::make_unique<SequenceAction>(std::move(acts));
+        return std::make_unique<SequenceAction>(start, std::move(acts));
     }
 
     std::unique_ptr<VariableBlockAction> parseVariableBlock(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -599,7 +599,7 @@ namespace Pigeon::Parser
         {
             throwParsingError(start, "Expected body");
         }
-        return std::make_unique<VariableBlockAction>(std::move(variables), std::move(act));
+        return std::make_unique<VariableBlockAction>(start, std::move(variables), std::move(act));
     }
 
     std::unique_ptr<CreateArrayAction> parseArrayCreation(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -607,7 +607,7 @@ namespace Pigeon::Parser
         skipNotCode(start, end);
         std::vector<std::unique_ptr<Action>> values = parseArguments(start, end);
         skipNotCode(start, end);
-        return std::make_unique<CreateArrayAction>(std::move(values));
+        return std::make_unique<CreateArrayAction>(start, std::move(values));
     }
 
     std::vector<std::unique_ptr<Action>> parseTopLevelDeclarations(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -664,7 +664,7 @@ namespace Pigeon::Parser
         {
             throwParsingError(start, "Expected body for while loop");
         }
-        return std::make_unique<ForLoopAction>(std::move(init), std::move(cond), std::move(iter), std::move(body));
+        return std::make_unique<ForLoopAction>(start, std::move(init), std::move(cond), std::move(iter), std::move(body));
     }
 
     std::unique_ptr<WhileLoopAction> parseWhileLoop(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -681,7 +681,7 @@ namespace Pigeon::Parser
         {
             throwParsingError(start, "Expected body for while loop");
         }
-        return std::make_unique<WhileLoopAction>(std::move(cond), std::move(body));
+        return std::make_unique<WhileLoopAction>(start, std::move(cond), std::move(body));
     }
 
     std::unique_ptr<SystemFunctionCallFunction> parseSystemFunction(std::string::const_iterator &start, std::string::const_iterator const &end)
@@ -707,7 +707,7 @@ namespace Pigeon::Parser
         {
             throwParsingError(start, "Function '" + name + "' expects " + std::to_string(info.value().argumentCount) + " arguments, but got " + std::to_string(args.size()));
         }
-        return std::make_unique<SystemFunctionCallFunction>(info.value().functionId, std::move(args));
+        return std::make_unique<SystemFunctionCallFunction>(start, info.value().functionId, std::move(args));
     }
 
 }
