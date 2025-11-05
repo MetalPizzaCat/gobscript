@@ -53,6 +53,8 @@ namespace Pigeon::Parser
 
     std::unique_ptr<GetConstNumberAction> parseConstNumber(std::string::const_iterator &start, std::string::const_iterator const &end);
 
+    std::unique_ptr<GetConstNumberAction> parseConstChar(std::string::const_iterator &start, std::string::const_iterator const &end);
+
     /// @brief Try to parse a string containing type of the operator, excluding assignment operators
     /// @param start
     /// @param end

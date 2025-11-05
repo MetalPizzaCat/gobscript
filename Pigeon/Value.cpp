@@ -12,7 +12,7 @@ std::string convertValueToString(Value const &val)
     case ValueType::Array:
         return std::get<ArrayNode *>(val)->toString();
     default:
-        throw std::runtime_error("Rest of value handling not implemented");
+        throw RuntimeActionExecutionError("Rest of value handling not implemented. Type with index " + std::to_string(val.index()) + " is not implemented");
     }
 }
 
@@ -27,7 +27,7 @@ bool isValueNull(Value const &val)
     case ValueType::Array:
         return std::get<ArrayNode *>(val)->isEmpty();
     default:
-        throw std::runtime_error("Rest of value null handling not implemented");
+        throw RuntimeActionExecutionError("Rest of value null handling not implemented");
     }
 }
 

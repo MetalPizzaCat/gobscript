@@ -82,7 +82,7 @@ namespace Pigeon::Parser
             it++;
         }
         bool hitClosingMark = false;
-        for (; it != end && expectedClosingMark ? *it != '"' : (*it != ' ' && *it != '(' && *it != ')'); it++)
+        for (; it != end && expectedClosingMark ? *it != '"' : (*it != ' ' && *it != '\n' && *it != '(' && *it != ')'); it++)
         {
             if (std::optional<SpecialCharacter> spec = tryParseSpecialCharacter(it, end); spec.has_value())
             {
@@ -105,7 +105,7 @@ namespace Pigeon::Parser
                 it++;
             }
         }
-        if (result == "" || (!expectedClosingMark && std::find(Keywords.begin(), Keywords.end(), result) != Keywords.end()))
+        if ((result == "" && !expectedClosingMark) || (!expectedClosingMark && std::find(Keywords.begin(), Keywords.end(), result) != Keywords.end()))
         {
             return nullptr;
         }
@@ -159,6 +159,33 @@ namespace Pigeon::Parser
         start += offset;
         return std::make_unique<GetConstNumberAction>(start, numVal);
     }
+
+    std::unique_ptr<GetConstNumberAction> parseConstChar(std::string::const_iterator &start, std::string::const_iterator const &end)
+    {
+        if (*start != '\'')
+        {
+            return nullptr;
+        }
+        char ch = '\0';
+        start++;
+        if (std::optional<SpecialCharacter> spec = tryParseSpecialCharacter(start, end); spec.has_value())
+        {
+            ch = spec.value().character;
+            start += strnlen(spec->sequence, 2);
+        }
+        else
+        {
+            ch = *start;
+            start++;
+        }
+        if (*start != '\'')
+        {
+            throwParsingError(start, "Expected ' ");
+        }
+        start++;
+        return std::make_unique<GetConstNumberAction>(start, (int64_t)ch);
+    }
+
     std::optional<Operator> parseBinaryOperationType(std::string::const_iterator &start, std::string::const_iterator const &end)
     {
         for (std::pair<const std::string, Operator> const &pair : Operators)
@@ -367,7 +394,10 @@ namespace Pigeon::Parser
         {
             return act;
         }
-
+        else if (std::unique_ptr<Action> ch = parseConstChar(start, end); ch != nullptr)
+        {
+            return ch;
+        }
         else if (std::unique_ptr<Action> getStr = parseConstString(start, end); getStr != nullptr)
         {
             skipNotCode(start, end);
@@ -491,6 +521,11 @@ namespace Pigeon::Parser
     std::unique_ptr<AssignOperationAction> parseBinaryAssignmentOperation(Operator op, std::string::const_iterator &start, std::string::const_iterator end)
     {
         skipNotCode(start, end);
+        if (*start != '$')
+        {
+            throwParsingError(start, "Expected variable name");
+        }
+        start++;
         std::optional<std::string> name = parseVariableName(start, end);
         if (!name.has_value())
         {
@@ -688,7 +723,7 @@ namespace Pigeon::Parser
     {
         std::optional<StandardFunctionInfo> info = {};
         std::string name;
-        for (auto const &func : StandardFunctionIds)
+        for (auto const &func : StandardFunctions)
         {
             if (expectString(func.first, start, end))
             {

@@ -195,7 +195,10 @@ Value VariableBlockAction::execute(State &state) const
     }
     state.pushVariableScope(variables);
     Value result = m_body->execute(state);
+    // we need to preserve value outside of the block it was created in. generally it doesn't matter but for pointer types gc could be an issue
+    increaseValueRefCount(result);
     state.popVariableScope();
+    decreaseValueRefCount(result);
     return result;
 }
 
@@ -317,7 +320,7 @@ Value SequenceAction::execute(State &state) const
 Value FunctionDeclarationAction::execute(State &state) const
 {
     state.addFunction(m_name, m_arguments, m_body.get());
-    return Value();
+    return Value(FunctionReference{.id = (uint32_t)state.getUserFunctionIdByName(m_name).value(), .native = false});
 }
 
 Value FunctionCallAction::execute(State &state) const
@@ -348,7 +351,9 @@ Value FunctionCallAction::execute(State &state) const
     }
     state.pushVariableScope(variables);
     Value result = f.value().body->execute(state);
+    increaseValueRefCount(result);
     state.popVariableScope();
+    decreaseValueRefCount(result);
     for (auto const &v : variables)
     {
         decreaseValueRefCount(v.second);
@@ -395,7 +400,7 @@ Value FunctionAccessAction::execute(State &state) const
     {
         return Value(FunctionReference{.id = (uint32_t)funcId.value(), .native = false});
     }
-    for (std::pair<const std::string, StandardFunctionInfo> nativeFuncs : StandardFunctionIds)
+    for (std::pair<const std::string, StandardFunctionInfo> nativeFuncs : StandardFunctions)
     {
         if (m_name == nativeFuncs.first)
         {

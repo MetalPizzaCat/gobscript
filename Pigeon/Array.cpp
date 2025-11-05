@@ -22,7 +22,9 @@ void ArrayNode::setValue(size_t i, Value val)
     if (i < m_values.size())
     {
         m_values[i] = val;
+        return;
     }
+    throw RuntimeActionExecutionError("Attempted to access out of bounds value in the array");
 }
 
 std::string ArrayNode::toString() const

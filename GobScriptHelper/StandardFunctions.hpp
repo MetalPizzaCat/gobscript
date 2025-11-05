@@ -10,9 +10,9 @@ namespace GobScriptHelper
     /// @brief Attempt to parse given code string and return a runnable action object
     /// @param code Code to parse
     /// @return Smart pointer containing runnable action or nullptr if parsing failed. Exception is thrown on parsing error
-    std::unique_ptr<Action> loadString(std::string const& code);
+    std::unique_ptr<Action> loadString(std::string const &code);
 
-    std::unique_ptr<Action> loadFile(std::string const& filepath);
+    std::unique_ptr<Action> loadFile(std::string const &filepath);
 
     /// @brief Attempt to retrieve a function with a given id
     /// @param state State to search the function in
@@ -53,4 +53,6 @@ namespace GobScriptHelper
     Value nativeAppend(State &state, std::vector<Value> const &args);
 
     Value nativeAt(State &state, std::vector<Value> const &args);
+
+    Value nativeSetAt(State &state, std::vector<Value> const &args);
 }

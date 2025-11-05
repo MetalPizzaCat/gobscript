@@ -81,18 +81,21 @@
 State prepareScriptState()
 {
     using namespace GobScriptHelper;
-    return State({nativePrintLineFunction,
-                  nativeLenFunction,
-                  nativeArrayFilter,
-                  nativeMapArray,
-                  nativeListDirectory,
-                  nativeGetFileNameSuffix,
-                  nativeIsDirectory,
-                  nativeIsFile,
-                  nativeAppend,
-                  nativeAt,
-                  nativeGetFileName,
-                  nativeGetFileNameStem});
+    return State({
+        nativePrintLineFunction,
+        nativeLenFunction,
+        nativeArrayFilter,
+        nativeMapArray,
+        nativeListDirectory,
+        nativeGetFileNameSuffix,
+        nativeIsDirectory,
+        nativeIsFile,
+        nativeAppend,
+        nativeAt,
+        nativeGetFileName,
+        nativeGetFileNameStem,
+        nativeSetAt,
+    });
 }
 
 void runInteractiveMode()
@@ -179,6 +182,7 @@ int runFileMode(std::string const &filepath)
 }
 int main(int argc, char **argv)
 {
+    //return runFileMode("./test.gsh");
     std::vector<std::string> args;
     for (int i = 0; i < argc; i++)
     {

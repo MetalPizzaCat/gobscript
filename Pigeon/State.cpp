@@ -177,3 +177,19 @@ void State::collectGarbage()
         delete del;
     }
 }
+
+State::~State()
+{
+    MemoryNode *prev = &m_root;
+    MemoryNode *curr = m_root.getNext();
+    while (curr != nullptr)
+    {
+        // if we are deleting then prev should stay the same while
+        // curr gets deleted
+        MemoryNode *del = curr;
+        prev->eraseNext();
+        curr = prev->getNext();
+
+        delete del;
+    }
+}

@@ -76,6 +76,8 @@ public:
 
     void collectGarbage();
 
+    ~State();
+
 private:
     std::vector<NativeFunction> m_standardFunctions;
     std::vector<std::map<std::string, Value>> m_variables;

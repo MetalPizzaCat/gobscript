@@ -5,17 +5,17 @@
     )
 )
 (let (
-        (root_folder "./flac_folder/")
+        (root_folder "./flac_folder/") 
         (dest_folder "./dest/")
         (dir_contents 0)
         (i 0)
     )
     (seq
-        (= dir_contents (filter (listdir $root_folder) :is_correct_file))
+        (= $dir_contents (filter (listdir $root_folder) :is_correct_file))
         (print $dir_contents)
         (print (listdir $root_folder))
 
-        (for (() (< $i (len $dir_contents)) (+= i 1))
+        (for (() (< $i (len $dir_contents)) (+= $i 1))
             (seq
                 (print (filename (at $dir_contents $i)))
                 (exec ffmpeg

@@ -11,7 +11,9 @@ struct StandardFunctionInfo
     /// @brief Which function in this state does this function refer to. Used to avoid broken ids on change
     size_t functionId;
 };
-static const std::map<std::string, StandardFunctionInfo> StandardFunctionIds = {
+
+
+static std::map<std::string, StandardFunctionInfo> StandardFunctions = {
     {"print", StandardFunctionInfo{.argumentCount = (size_t)-1, .functionId = 0}},
     {"len", StandardFunctionInfo{.argumentCount = 1, .functionId = 1}},
     {"filter", StandardFunctionInfo{.argumentCount = 2, .functionId = 2}},
@@ -23,4 +25,5 @@ static const std::map<std::string, StandardFunctionInfo> StandardFunctionIds = {
     {"append", StandardFunctionInfo{.argumentCount = 2, .functionId = 8}},
     {"at", StandardFunctionInfo{.argumentCount = 2, .functionId = 9}},
     {"filename", StandardFunctionInfo{.argumentCount = 1, .functionId = 10}},
-    {"filename_stem", StandardFunctionInfo{.argumentCount = 1, .functionId = 11}}};
+    {"filename_stem", StandardFunctionInfo{.argumentCount = 1, .functionId = 11}},
+    {"set", StandardFunctionInfo{.argumentCount = 3, .functionId = 12}}};
