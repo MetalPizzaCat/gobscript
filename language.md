@@ -34,6 +34,10 @@ There is also a way to write characters similar to c characters, however there i
 
 Operations such as `str[i]` can be performed using `at` operator, although it returns a string containing the character, not the integer value. For example, with `$str` being equal to `""Hello world"` calling `(at $str 2)` will return a *new* string containing only value "e". 
 
+### Input/Output
+
+Printing can be done by simply using `print` function which takes in any number of arguments and prints them all separated by `\t` character. 
+
 ### Sequencing
 
 Unlike most other languages, even lisp inspired ones such as the one used in Sierra Creative Interpreter, expression bodies can only contain one expression. So for instance while in python you can write several expressions and these actions will execute one after another. Example: 

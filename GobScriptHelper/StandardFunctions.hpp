@@ -30,6 +30,8 @@ namespace GobScriptHelper
 
     Value nativePrintLineFunction(State &state, std::vector<Value> const &args);
 
+    Value nativePrintFunction(State &state, std::vector<Value> const &args);
+
     Value nativeLenFunction(State &state, std::vector<Value> const &args);
 
     Value nativeGetFileNameSuffix(State &state, std::vector<Value> const &args);
@@ -55,4 +57,12 @@ namespace GobScriptHelper
     Value nativeAt(State &state, std::vector<Value> const &args);
 
     Value nativeSetAt(State &state, std::vector<Value> const &args);
+
+    Value nativeInput(State &state, std::vector<Value> const &args);
+
+    Value nativeCreateArrayOfSize(State &state, std::vector<Value> const &args);
+
+    Value nativeConvertCharIntToAsciiString(State &state, std::vector<Value> const &args);
+
+    Value nativeConvertCharStringToAsciiInt(State &state, std::vector<Value> const &args);
 }

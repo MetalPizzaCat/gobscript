@@ -12,9 +12,8 @@ struct StandardFunctionInfo
     size_t functionId;
 };
 
-
-static std::map<std::string, StandardFunctionInfo> StandardFunctions = {
-    {"print", StandardFunctionInfo{.argumentCount = (size_t)-1, .functionId = 0}},
+static const std::map<std::string, StandardFunctionInfo> StandardFunctions = {
+    {"println", StandardFunctionInfo{.argumentCount = (size_t)-1, .functionId = 0}},
     {"len", StandardFunctionInfo{.argumentCount = 1, .functionId = 1}},
     {"filter", StandardFunctionInfo{.argumentCount = 2, .functionId = 2}},
     {"map", StandardFunctionInfo{.argumentCount = 2, .functionId = 3}},
@@ -26,4 +25,9 @@ static std::map<std::string, StandardFunctionInfo> StandardFunctions = {
     {"at", StandardFunctionInfo{.argumentCount = 2, .functionId = 9}},
     {"filename", StandardFunctionInfo{.argumentCount = 1, .functionId = 10}},
     {"filename_stem", StandardFunctionInfo{.argumentCount = 1, .functionId = 11}},
-    {"set", StandardFunctionInfo{.argumentCount = 3, .functionId = 12}}};
+    {"set", StandardFunctionInfo{.argumentCount = 3, .functionId = 12}},
+    {"input", StandardFunctionInfo{.argumentCount = 0, .functionId = 13}},
+    {"array_of_size", StandardFunctionInfo{.argumentCount = 1, .functionId = 14}},
+    {"chr", StandardFunctionInfo{.argumentCount = 1, .functionId = 15}},
+    {"ord", StandardFunctionInfo{.argumentCount = 1, .functionId = 16}},
+    {"print", StandardFunctionInfo{.argumentCount = (size_t)-1, .functionId = 17}}};

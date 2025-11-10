@@ -6,6 +6,7 @@
 #include "../Pigeon/Parser.hpp"
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include <sstream>
 
 std::unique_ptr<Action> GobScriptHelper::loadString(std::string const &code)
@@ -84,6 +85,19 @@ Value GobScriptHelper::nativePrintLineFunction(State &state, std::vector<Value> 
         std::cout << convertValueToString(v) << '\t';
     }
     std::cout << std::endl;
+    return Value(0);
+}
+
+Value GobScriptHelper::nativePrintFunction(State &state, std::vector<Value> const &args)
+{
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        std::cout << convertValueToString(args[0]);
+        if (i != args.size() - 1)
+        {
+            std::cout << '\t';
+        }
+    }
     return Value(0);
 }
 
@@ -323,4 +337,46 @@ Value GobScriptHelper::nativeSetAt(State &state, std::vector<Value> const &args)
         throw RuntimeActionExecutionError("Invalid argument type for indexing operation, expected array or string");
     }
     return Value();
+}
+
+Value GobScriptHelper::nativeInput(State &state, std::vector<Value> const &args)
+{
+    std::string input;
+
+    std::cin >> input;
+    return state.createString(input);
+}
+
+Value GobScriptHelper::nativeCreateArrayOfSize(State &state, std::vector<Value> const &args)
+{
+    Value size = args[0];
+    if (size.index() != ValueType::Integer)
+    {
+        throw RuntimeActionExecutionError("Expected integer for array size");
+    }
+    return state.createArray(std::vector<Value>(getValueAsInt(size), Value(0)));
+}
+
+Value GobScriptHelper::nativeConvertCharIntToAsciiString(State &state, std::vector<Value> const &args)
+{
+    Value ch = args[0];
+    if (ch.index() != ValueType::Integer)
+    {
+        throw RuntimeActionExecutionError("Expected integer");
+    }
+    return state.createString(std::string{(char)getValueAsInt(ch)});
+}
+
+Value GobScriptHelper::nativeConvertCharStringToAsciiInt(State &state, std::vector<Value> const &args)
+{
+    Value str = args[0];
+    if (str.index() != ValueType::String)
+    {
+        throw RuntimeActionExecutionError("Expected string");
+    }
+    if (getValueAsString(str)->getLen() != 1)
+    {
+        throw RuntimeActionExecutionError(std::string("Expected single character, but found string of length ") + std::to_string(getValueAsString(str)->getLen()));
+    }
+    return (IntegerType)getValueAsString(str)->getValue()[0];
 }

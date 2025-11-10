@@ -129,12 +129,17 @@ namespace Pigeon::Parser
     }
     std::unique_ptr<GetConstNumberAction> parseConstNumber(std::string::const_iterator &start, std::string::const_iterator const &end)
     {
-        if (!std::isdigit(*start))
+        if (!std::isdigit(*start) && *start != '-')
         {
             return nullptr;
         }
         std::string num;
         size_t offset = 0;
+        if (start + offset != end && *(start + offset) == '-')
+        {
+            num += '-';
+            offset++;
+        }
         while ((start + offset) != end && std::isdigit(*(start + offset)))
         {
             num.push_back(*(start + offset));
@@ -557,20 +562,34 @@ namespace Pigeon::Parser
             throwParsingError(start, "Expected body");
         }
         skipNotCode(start, end);
-        bool hasElse = false;
-        if (expectString("else", start, end))
+        if (expectString("elif", start, end))
         {
-            hasElse = true;
             start += 4;
+            skipNotCode(start, end);
+            std::unique_ptr<Action> elifBranch = parseBranch(start, end);
+            if (elifBranch == nullptr)
+            {
+                throwParsingError(start, "Expected elif branch");
+            }
+            skipNotCode(start, end);
+            return std::make_unique<BranchAction>(start, std::move(condition), std::move(thenBranch), std::move(elifBranch));
         }
-        skipNotCode(start, end);
-        std::unique_ptr<Action> elseBranch = parseFunction(start, end);
-        if (elseBranch == nullptr && hasElse)
+        else if (expectString("else", start, end))
         {
-            throwParsingError(start, "Expected else body");
+            start += 4;
+            skipNotCode(start, end);
+            std::unique_ptr<Action> elseBranch = parseFunction(start, end);
+            if (elseBranch == nullptr)
+            {
+                throwParsingError(start, "Expected else body");
+            }
+            skipNotCode(start, end);
+            return std::make_unique<BranchAction>(start, std::move(condition), std::move(thenBranch), std::move(elseBranch));
         }
-        skipNotCode(start, end);
-        return std::make_unique<BranchAction>(start, std::move(condition), std::move(thenBranch), std::move(elseBranch));
+        else
+        {
+            return std::make_unique<BranchAction>(start, std::move(condition), std::move(thenBranch), nullptr);
+        }
     }
 
     std::unique_ptr<SequenceAction> parseSequence(std::string::const_iterator &start, std::string::const_iterator const &end)

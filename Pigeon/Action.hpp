@@ -137,7 +137,6 @@ public:
                                                                 Action(it)
     {
     }
-
     Value execute(State &state) const override;
 
 private:

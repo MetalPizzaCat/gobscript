@@ -27,9 +27,3 @@ cmake --build out
 ```
 
 If everything completed correctly the `out` folder will contain the `gsh` executable with can be used for running code
-
-
-# Expanding
-
-If you intend to fork and update the project to either include more functions or change some functionality there are a few things to know and few ways to make it easier
-
