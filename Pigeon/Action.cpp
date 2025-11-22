@@ -4,6 +4,39 @@
 
 #include "StandardFunctions.hpp"
 
+#if (defined(LINUX) || defined(__linux__))
+#include <unistd.h>    /* for fork */
+#include <sys/types.h> /* for pid_t */
+#include <sys/wait.h>  /* for wait */
+#elif (defined(_WIN32) || defined(_WIN64))
+#include <Windows.h>
+#include <locale>
+#include <codecvt>
+// Returns the last Win32 error, in string format. Returns an empty string if there is no error.
+std::string GetLastErrorAsString(DWORD errorMessageID)
+{
+    if (errorMessageID == 0)
+    {
+        return std::string(); // No error message has been recorded
+    }
+
+    LPSTR messageBuffer = nullptr;
+
+    // Ask Win32 to give us the string version of that message ID.
+    // The parameters we pass in, tell Win32 to create the buffer that holds the message for us (because we don't yet know how long the message string will be).
+    size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                 NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+    // Copy the error message into a std::string.
+    std::string message(messageBuffer, size);
+
+    // Free the Win32's string's buffer.
+    LocalFree(messageBuffer);
+
+    return message;
+}
+#endif
+
 Value callNativeFunction(State &state, size_t funcId, std::vector<std::unique_ptr<Action>> const &arguments)
 {
     if (std::optional<State::NativeFunction> f = state.getStandardFunction(funcId); f.has_value())
@@ -148,6 +181,8 @@ Value BinaryOperationAction::execute(State &state) const
 Value CommandCallAction::execute(State &state) const
 {
     std::string programName = convertValueToString(m_commandName->execute(state));
+
+#if (defined(LINUX) || defined(__linux__))
     std::vector<std::string> argsV;
     for (std::unique_ptr<Action> const &arg : m_arguments)
     {
@@ -185,6 +220,56 @@ Value CommandCallAction::execute(State &state) const
         waitpid(pid, &status, 0);
         return Value(status);
     }
+#elif (defined(_WIN32) || defined(_WIN64))
+
+
+    std::string cmd = programName + " ";
+    for (std::unique_ptr<Action> const &arg : m_arguments)
+    {
+        cmd += convertValueToString(arg->execute(state)) + " ";
+    }
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+    // windows requires `char*` instead of const char* for some reason
+    // so we create temp buffer  
+    char* cmdStr = new char[cmd.size() + 1];
+    memcpy(cmdStr, cmd.c_str(), cmd.size());
+    cmdStr[cmd.size()] = 0;
+    // create process using win32 api
+    // this does create function similar to the one in unix
+    // but while i have been able to check that output works
+    // the input i haven't been able to test
+
+    // note: i have practically 0 experience with WIN32 API so if someone is reading it and knows how to
+    // achieve better result, you are more then welcome to help!
+    // TODO: Improve subprocess handling
+    if (!CreateProcess(nullptr,         // we don't need any modules
+                       cmdStr,          // command we want to run
+                       nullptr,
+                       nullptr,
+                       true,            // we make it inherit handles, to mimic piping(i think?)
+                       0,
+                       nullptr,
+                       nullptr,
+                       &si,
+                       &pi))
+    {
+        delete cmdStr;
+        DWORD err = GetLastError();
+        std::cerr << "Failed to start process " << GetLastErrorAsString(err) << std::endl;
+        return err;
+    }
+    delete cmdStr;
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return 0;
+#else
+#error "Unknown platform detected, please implement `exec` action process calling
+#endif
 }
 
 Value VariableBlockAction::execute(State &state) const
