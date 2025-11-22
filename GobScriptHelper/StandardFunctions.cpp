@@ -147,7 +147,7 @@ Value GobScriptHelper::nativeGetFileNameSuffix(State &state, std::vector<Value> 
     {
         throw RuntimeActionExecutionError("Expected string");
     }
-    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).extension());
+    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).extension().string());
 }
 
 Value GobScriptHelper::nativeGetFileName(State &state, std::vector<Value> const &args)
@@ -157,7 +157,7 @@ Value GobScriptHelper::nativeGetFileName(State &state, std::vector<Value> const 
     {
         throw RuntimeActionExecutionError("Expected string");
     }
-    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).filename());
+    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).filename().string());
 }
 
 Value GobScriptHelper::nativeGetFileNameStem(State &state, std::vector<Value> const &args)
@@ -167,7 +167,7 @@ Value GobScriptHelper::nativeGetFileNameStem(State &state, std::vector<Value> co
     {
         throw RuntimeActionExecutionError("Expected string");
     }
-    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).stem());
+    return state.createString(std::filesystem::path(getValueAsString(v)->getValue()).stem().string());
 }
 
 Value GobScriptHelper::nativeArrayFilter(State &state, std::vector<Value> const &args)
@@ -246,7 +246,7 @@ Value GobScriptHelper::nativeListDirectory(State &state, std::vector<Value> cons
     std::vector<Value> files;
     for (const auto &entry : std::filesystem::directory_iterator(getValueAsString(path)->getValue()))
     {
-        files.push_back(state.createString(entry.path()));
+        files.push_back(state.createString(entry.path().string()));
     }
     return state.createArray(files);
 }
