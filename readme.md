@@ -21,11 +21,13 @@ Interactive mode is used for running short code snippets and exploring various l
 
 # Building
 
-Note that currently only linux is supported due to how `exec` is implemented. 
+Note that the project is built around unix and  linux specifically, so while this project can run on windows and was tested on windows(built with msvc), functionality of `exec` is subpar on windows when build with msvc. Powershell appears to handle it fine, but vscode behaves strangely
 
 ## Linux 
 
 This project uses cmake and does not rely on any external libraries so building should be pretty easy. The following uses shell script(ironic i know), however if you intend on development and use vscode it should automatically pickup on the project.
+
+**IMPORTANT!** g++ and cmake are required.
 
 Assuming you are now in the root directory of the project(folder containing `main.cpp` and `CMakeLists.txt`) do following
 ```sh
@@ -35,3 +37,16 @@ cmake --build out
 ```
 
 If everything completed correctly the `out` folder will contain the `gsh` executable with can be used for running code
+
+
+## Windows
+
+This project uses cmake and does not rely on any external libraries so building should be pretty easy. The following was testing using Powershell, however if you intend on development and use vscode it should automatically pickup on the project.
+
+**IMPORTANT!** You need visual studio and cmake to build. This was tested with visual studio community edition 2022. Alternatively you can build
+
+```sh
+mkdir out
+cmake -DCMAKE_BUILD_TYPE=Release -S ./ -B out
+cmake --build out
+```
