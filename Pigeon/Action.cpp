@@ -179,6 +179,7 @@ Value CommandCallAction::execute(State &state) const
         while (read(pipefd[0], buffer, sizeof(buffer)) != 0)
         {
             std::cout << buffer << std::endl;
+            memset(buffer, 0, sizeof(buffer));
         }
         int status;
         waitpid(pid, &status, 0);
