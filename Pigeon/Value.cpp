@@ -11,6 +11,11 @@ std::string convertValueToString(Value const &val)
         return std::get<StringNode *>(val)->getValue();
     case ValueType::Array:
         return std::get<ArrayNode *>(val)->toString();
+    case ValueType::FunctionRef:
+        return std::string("FunctionRef{ id = ") +
+               std::to_string(std::get<FunctionRef>(val).id) +
+               " is-native = " +
+               (std::get<FunctionRef>(val).native ? "true" : "false") + " }";
     default:
         throw RuntimeActionExecutionError("Rest of value handling not implemented. Type with index " + std::to_string(val.index()) + " is not implemented");
     }
@@ -26,6 +31,9 @@ bool isValueNull(Value const &val)
         return std::get<StringNode *>(val)->getValue() == "";
     case ValueType::Array:
         return std::get<ArrayNode *>(val)->isEmpty();
+    case ValueType::FunctionRef:
+        // these simply can't be null
+        return false;
     default:
         throw RuntimeActionExecutionError("Rest of value null handling not implemented");
     }
@@ -62,6 +70,11 @@ bool areValuesTheSame(Value const &a, Value const &b)
     if (isValueNull(a) && isValueNull(b))
     {
         return true;
+    }
+
+    if (a.index() == ValueType::FunctionRef && b.index() == ValueType::FunctionRef)
+    {
+        return std::get<FunctionRef>(a).id == std::get<FunctionRef>(b).id && std::get<FunctionRef>(a).native == std::get<FunctionRef>(b).native;
     }
 
     if (a.index() == ValueType::Integer && b.index() == ValueType::Integer)
@@ -105,6 +118,8 @@ bool areValuesEqual(Value const &a, Value const &b)
         return std::get<StringNode *>(a) == std::get<StringNode *>(b);
     case ValueType::Array:
         return std::get<ArrayNode *>(a) == std::get<ArrayNode *>(b);
+    case ValueType::FunctionRef:
+        return std::get<FunctionRef>(a).id == std::get<FunctionRef>(b).id && std::get<FunctionRef>(a).native == std::get<FunctionRef>(b).native;
     }
     // should not be reachable but exists in case of future changes
     return false;

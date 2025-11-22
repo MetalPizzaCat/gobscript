@@ -9,6 +9,30 @@
 #include <algorithm>
 #include <sstream>
 
+State GobScriptHelper::prepareScriptState()
+{
+    using namespace GobScriptHelper;
+    return State({nativePrintLineFunction,
+                  nativeLenFunction,
+                  nativeArrayFilter,
+                  nativeMapArray,
+                  nativeListDirectory,
+                  nativeGetFileNameSuffix,
+                  nativeIsDirectory,
+                  nativeIsFile,
+                  nativeAppend,
+                  nativeAt,
+                  nativeGetFileName,
+                  nativeGetFileNameStem,
+                  nativeSetAt,
+                  nativeInput,
+                  nativeCreateArrayOfSize,
+                  nativeConvertCharIntToAsciiString,
+                  nativeConvertCharStringToAsciiInt,
+                  nativePrintFunction,
+                  nativeExit});
+}
+
 std::unique_ptr<Action> GobScriptHelper::loadString(std::string const &code)
 {
     std::string::const_iterator start = code.begin();
@@ -379,4 +403,14 @@ Value GobScriptHelper::nativeConvertCharStringToAsciiInt(State &state, std::vect
         throw RuntimeActionExecutionError(std::string("Expected single character, but found string of length ") + std::to_string(getValueAsString(str)->getLen()));
     }
     return (IntegerType)getValueAsString(str)->getValue()[0];
+}
+
+Value GobScriptHelper::nativeExit(State &state, std::vector<Value> const &args)
+{
+    Value str = args[0];
+    if (str.index() != ValueType::Integer)
+    {
+        throw RuntimeActionExecutionError("Expected exit code");
+    }
+    exit(getValueAsInt(str));
 }

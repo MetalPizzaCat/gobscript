@@ -13,9 +13,12 @@ class State
 public:
     using NativeFunction = std::function<Value(State &state, std::vector<Value> const &args)>;
 
-    explicit State() = default;
+    /// @brief Create an empty state with no standard functions and single "global" variable layer
+    explicit State();
 
-    explicit State(std::vector<NativeFunction> const &funcs) : m_standardFunctions(funcs) {}
+    /// @brief Create empty state with provided standard functions and single "global" variable layer
+    /// @param funcs Standard functions to add to the state
+    explicit State(std::vector<NativeFunction> const &funcs);
 
     /// @brief  Create a new string object and store it in the state memory
     /// @param base Inital value for the string object

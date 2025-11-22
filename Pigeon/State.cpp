@@ -1,6 +1,15 @@
 #include "State.hpp"
 #include "Action.hpp"
 #include <algorithm>
+State::State()
+{
+    m_variables.push_back({});
+}
+
+State::State(std::vector<NativeFunction> const &funcs) : m_standardFunctions(funcs)
+{
+    m_variables.push_back({});
+}
 StringNode *State::createString(std::string const &base)
 {
     StringNode *node = new StringNode(base);

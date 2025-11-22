@@ -4,6 +4,10 @@
 #include "../Pigeon/State.hpp"
 namespace GobScriptHelper
 {
+    /// @brief Create a script state object that can be used for gsh
+    /// @return
+    State prepareScriptState();
+
     /// @brief Abstraction around both Pigeon and c++ functions to help with callbacks
     using ScriptFunction = std::variant<Function, State::NativeFunction>;
 
@@ -62,7 +66,21 @@ namespace GobScriptHelper
 
     Value nativeCreateArrayOfSize(State &state, std::vector<Value> const &args);
 
+    /// @brief Convert an integer value into a 1 character long string with ASCII character based on given value
+    /// @param state 
+    /// @param args 
+    /// @return 
     Value nativeConvertCharIntToAsciiString(State &state, std::vector<Value> const &args);
 
+    /// @brief Convert single character string into an integer value equal to the ASCII code of the character
+    /// @param state 
+    /// @param args 
+    /// @return 
     Value nativeConvertCharStringToAsciiInt(State &state, std::vector<Value> const &args);
+
+    /// @brief Ends execution of the program returning the first argument converted to int as the exit code. This function does not return anything and ends entire program execution
+    /// @param state 
+    /// @param args 
+    /// @return 
+    Value nativeExit(State &state, std::vector<Value> const &args);
 }

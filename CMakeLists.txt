@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(gsh VERSION 0.1.0 LANGUAGES C CXX)
+project(gsh VERSION 0.2.0 LANGUAGES C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -32,5 +32,9 @@ add_executable(gsh main.cpp
     GobScriptHelper/StandardFunctions.cpp
     Pigeon/Execution.hpp
     Pigeon/Execution.cpp
+    GobScriptHelper/Interactive.hpp
+    GobScriptHelper/Interactive.cpp   
+    GobScriptHelper/Terminal.hpp
+    GobScriptHelper/Terminal.cpp
 )
 

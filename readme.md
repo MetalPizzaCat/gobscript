@@ -9,7 +9,15 @@ See `language.md` for more
 
 # Running code
 
+## File mode
+
+File mode is used to run scripts saved in the file and simply runs provided file and exits the program once it is done.
+
 To run code simply use `gsh` app with `-i` argument to run code from file.
+
+## Interactive mode
+
+Interactive mode is used for running short code snippets and exploring various language features. It can be accessed by calling `gsh` with no arguments provided 
 
 # Building
 

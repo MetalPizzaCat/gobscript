@@ -30,4 +30,5 @@ static const std::map<std::string, StandardFunctionInfo> StandardFunctions = {
     {"array_of_size", StandardFunctionInfo{.argumentCount = 1, .functionId = 14}},
     {"chr", StandardFunctionInfo{.argumentCount = 1, .functionId = 15}},
     {"ord", StandardFunctionInfo{.argumentCount = 1, .functionId = 16}},
-    {"print", StandardFunctionInfo{.argumentCount = (size_t)-1, .functionId = 17}}};
+    {"print", StandardFunctionInfo{.argumentCount = (size_t)-1, .functionId = 17}},
+    {"exit", StandardFunctionInfo{.argumentCount = 1, .functionId = 18}}};
