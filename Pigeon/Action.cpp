@@ -4,7 +4,7 @@
 
 #include "StandardFunctions.hpp"
 
-#if (defined(LINUX) || defined(__linux__))
+#if (defined(LINUX) || defined(__linux__) || defined(__CYGWIN__))
 #include <unistd.h>    /* for fork */
 #include <sys/types.h> /* for pid_t */
 #include <sys/wait.h>  /* for wait */
@@ -182,7 +182,7 @@ Value CommandCallAction::execute(State &state) const
 {
     std::string programName = convertValueToString(m_commandName->execute(state));
 
-#if (defined(LINUX) || defined(__linux__))
+#if (defined(LINUX) || defined(__linux__) || defined(__CYGWIN__))
     std::vector<std::string> argsV;
     for (std::unique_ptr<Action> const &arg : m_arguments)
     {
@@ -267,7 +267,7 @@ Value CommandCallAction::execute(State &state) const
     CloseHandle(pi.hThread);
     return 0;
 #else
-#error "Unknown platform detected, please implement `exec` action process calling
+#error "Unknown platform detected, please implement `exec` action process calling"
 #endif
 }
 
